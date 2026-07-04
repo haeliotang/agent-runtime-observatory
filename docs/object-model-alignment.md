@@ -247,8 +247,12 @@ keep them lexically distinct.
 
 Concrete, minimal additions to `aro_schema` that would make it a genuine
 superset spine for all three — ordered by value, each traceable to a field
-above. (These are proposals for the roadmap issues, not changes made in this
-doc.)
+above. **Status: all six are now implemented** — #1 `Attestation` (with store
++ `POST /api/runs/{id}/attestations` + `aro_attestations_total`), #2
+`GoalEvent` (schema + vocabulary; automatic tracking still roadmap), #3
+`StepRecord.allocated_to`/`supports_goal`, #4 `AgentRun.coverage`, #5
+`AgentRun.verdict` (computed), #6 `EVIDENCE_ROLES`. See
+[object-model.md](object-model.md) for the resulting objects.
 
 1. **`Attestation` object** — the highest-value port. Fields drawn from the
    union of wutai's `ConsumerAttestation` and stillmirror's ratify flow:

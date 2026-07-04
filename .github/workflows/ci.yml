@@ -31,6 +31,30 @@ jobs:
       - run: uv sync --locked
       - run: uv run pytest tests/integration -q
 
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: aro
+          POSTGRES_PASSWORD: aro
+          POSTGRES_DB: aro
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aro -d aro"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 15
+    env:
+      ARO_TEST_DATABASE_URL: postgresql://aro:aro@localhost:5432/aro
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --locked
+      - run: uv run pytest tests/integration/test_postgres_store.py -q
+
   golden-replay:
     runs-on: ubuntu-latest
     steps:

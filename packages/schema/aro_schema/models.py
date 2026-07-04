@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 
 def utcnow() -> datetime:
@@ -47,6 +47,54 @@ class Severity(StrEnum):
     CRITICAL = "critical"
 
 
+class RunVerdict(StrEnum):
+    """Run-level trust roll-up, vocabulary aligned with wutai's trust verdict."""
+
+    TRUSTED = "trusted"
+    REVIEW_REQUIRED = "review_required"
+    BLOCKED = "blocked"
+
+
+class AttestationDecision(StrEnum):
+    """The human decision vocabulary, aligned with stillmirror-review's
+    ratify flow (accept / amend / reject) — deliberately distinct from the
+    machine-gate vocabulary (allow / deny / needs_review)."""
+
+    ACCEPT = "accept"
+    AMEND = "amend"
+    REJECT = "reject"
+
+
+class GoalEventKind(StrEnum):
+    """Goal lifecycle vocabulary, aligned with stillmirror-review's
+    append-only goal-events log."""
+
+    INTRODUCED = "introduced"
+    REINFORCED = "reinforced"
+    REPLACED = "replaced"
+    RETIRED = "retired"
+
+
+# Controlled vocabulary for EvidenceItem.kind / artifact roles, adopted from
+# wutai's artifactRole taxonomy (see docs/object-model-alignment.md).
+EVIDENCE_ROLES = (
+    "tool_output",
+    "primary_artifact",
+    "source_ledger",
+    "claim_ledger",
+    "evidence_verification",
+    "policy_preflight",
+    "policy_override_review",
+    "trust_verdict",
+    "runtime_trace",
+    "file_inventory",
+    "file_hash_check",
+    "session_ledger",
+    "audit_trail",
+    "supporting_artifact",
+)
+
+
 class ReviewerSeat(BaseModel):
     """A named human seat that carries accountability for a scope of agent work."""
 
@@ -63,6 +111,22 @@ class Goal(BaseModel):
     statement: str
     constraints: list[str] = Field(default_factory=list)
     owner_seat_id: str
+
+
+class GoalEvent(BaseModel):
+    """One entry in a goal's append-only lifecycle log.
+
+    Ported from stillmirror-review's goal-events.jsonl: a goal is not a static
+    string but something that gets introduced, reinforced by work, replaced,
+    or retired — and provenance means recording *when* each happened.
+    """
+
+    id: str
+    goal_id: str
+    kind: GoalEventKind
+    at: datetime = Field(default_factory=utcnow)
+    note: str = ""
+    replaced_by_goal_id: str | None = None
 
 
 class Task(BaseModel):
@@ -126,6 +190,8 @@ class StepRecord(BaseModel):
     kind: StepKind = StepKind.TOOL_CALL
     name: str
     args: dict[str, Any] = Field(default_factory=dict)
+    allocated_to: list[str] = Field(default_factory=list)
+    supports_goal: str = "unknown"  # "yes" | "no" | "unknown", per stillmirror's ledger
     input_digest: str
     output_digest: str | None = None
     output_preview: str | None = None
@@ -133,6 +199,19 @@ class StepRecord(BaseModel):
     started_at: datetime = Field(default_factory=utcnow)
     duration_ms: float = 0.0
     error: str | None = None
+
+
+class Coverage(BaseModel):
+    """A run's own declaration of its observability limits.
+
+    Ported from wutai's WorkPacketCoverage: an honest record states not just
+    what it captured but what it structurally could not see and what it did
+    not enforce.
+    """
+
+    captured: list[str] = Field(default_factory=list)
+    blind_spots: list[str] = Field(default_factory=list)
+    enforcement: list[str] = Field(default_factory=list)
 
 
 class AgentRun(BaseModel):
@@ -143,11 +222,52 @@ class AgentRun(BaseModel):
     status: RunStatus = RunStatus.PENDING
     started_at: datetime | None = None
     finished_at: datetime | None = None
+    coverage: Coverage | None = None
     steps: list[StepRecord] = Field(default_factory=list)
     policy_decisions: list[PolicyDecision] = Field(default_factory=list)
     risk_signals: list[RiskSignal] = Field(default_factory=list)
     evidence: list[EvidenceItem] = Field(default_factory=list)
     artifacts: list[Artifact] = Field(default_factory=list)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def verdict(self) -> RunVerdict:
+        """Trust roll-up over policy decisions, matching wutai's aggregation:
+        any deny -> blocked, else any needs_review -> review_required,
+        else trusted."""
+        decisions = {d.decision for d in self.policy_decisions}
+        if Decision.DENY in decisions:
+            return RunVerdict.BLOCKED
+        if Decision.NEEDS_REVIEW in decisions:
+            return RunVerdict.REVIEW_REQUIRED
+        return RunVerdict.TRUSTED
+
+
+class Attestation(BaseModel):
+    """A named human standing behind a scope of a run — the act of filling a
+    ReviewerSeat.
+
+    Field union of wutai's ConsumerAttestation and stillmirror-review's
+    ratify flow. Two invariants ported verbatim from the siblings:
+    - scoped ratification (wutai): `declared_scope` says what IS ratified and
+      `excluded_scope` says what is explicitly NOT — approval is never total;
+    - draft is not attestation (stillmirror): an assistant may fill
+      `proposed_by`, but only the named human in `attested_by` makes this an
+      attestation, and a `reject` decision is recorded rather than retried.
+    """
+
+    id: str
+    run_id: str
+    seat_id: str | None = None
+    decision: AttestationDecision
+    declared_scope: str
+    excluded_scope: str = ""
+    labels: list[str] = Field(default_factory=list)
+    proposed_by: str | None = None
+    attested_by: str
+    note: str = ""
+    subject_digest: str
+    attested_at: datetime = Field(default_factory=utcnow)
 
 
 class StepDivergence(BaseModel):

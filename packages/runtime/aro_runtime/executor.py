@@ -16,6 +16,7 @@ from pathlib import Path
 from aro_schema import (
     AgentRun,
     Artifact,
+    Coverage,
     Decision,
     EvidenceItem,
     PolicyDecision,
@@ -37,6 +38,27 @@ from aro_runtime.trace import TRACE_VERSION, TraceWriter
 _STEP_REF = re.compile(r"\$\{step:(\d+)\.output\}")
 
 PREVIEW_CHARS = 200
+
+# What the scripted runtime honestly does and does not observe (ported from
+# wutai's WorkPacketCoverage; see docs/object-model-alignment.md).
+SCRIPTED_COVERAGE = Coverage(
+    captured=[
+        "step_inputs_and_outputs_by_digest",
+        "policy_decisions",
+        "risk_signals",
+        "evidence_items",
+        "artifacts",
+        "jsonl_trace",
+    ],
+    blind_spots=[
+        "Tools are in-process simulations; no real shell, network, or filesystem is observed.",
+        "LLM/model internals are out of scope for the scripted runner.",
+    ],
+    enforcement=[
+        "Policy is enforced before every tool step (deny blocks execution).",
+        "needs_review executes but records review debt; nothing consumes it automatically.",
+    ],
+)
 
 
 def _resolve_args(args: dict, outputs: list[str | None]) -> dict:
@@ -79,6 +101,7 @@ def execute_script(
         model=script.model,
         status=RunStatus.RUNNING,
         started_at=utcnow(),
+        coverage=SCRIPTED_COVERAGE,
     )
     hooks.on_run_start(run)
 
@@ -92,6 +115,7 @@ def execute_script(
                 "script": script.model_dump(mode="json"),
                 "policy": policy_engine.policy.model_dump(mode="json"),
                 "workspace_digest": workspace.digest(),
+                "coverage": SCRIPTED_COVERAGE.model_dump(mode="json"),
             },
         )
 
@@ -99,7 +123,14 @@ def execute_script(
     failed = False
     for i, scripted in enumerate(script.steps):
         t0 = time.perf_counter()
-        step = StepRecord(index=i, name=scripted.tool, input_digest="", started_at=utcnow())
+        step = StepRecord(
+            index=i,
+            name=scripted.tool,
+            input_digest="",
+            started_at=utcnow(),
+            allocated_to=scripted.allocated_to,
+            supports_goal=scripted.supports_goal,
+        )
         pd: PolicyDecision | None = None
         try:
             args = _resolve_args(scripted.args, outputs)

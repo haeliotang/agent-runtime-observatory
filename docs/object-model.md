@@ -78,6 +78,37 @@ steps were compared and every field where the replay disagreed with the record
 (`input_digest`, `output_digest`, `error`, `policy_decision`,
 `missing_step` / `extra_step`, `workspace_digest`).
 
+## Accountability objects, part two (ported from the siblings)
+
+These objects implement the schema deltas identified in
+[object-model-alignment.md](object-model-alignment.md):
+
+**Attestation** — a named human standing behind a scope of a run: the act of
+filling a ReviewerSeat. Carries wutai's *scoped ratification* invariant
+(`declared_scope` says what IS ratified, `excluded_scope` what explicitly is
+NOT) and stillmirror's *draft-is-not-attestation* invariant (`proposed_by`
+may be an assistant; only the named human in `attested_by` makes it real).
+`subject_digest` pins exactly which stored run record was attested. Recorded
+via `POST /api/runs/{id}/attestations`; counted by `aro_attestations_total`.
+
+**AgentRun.verdict** (derived) — wutai-style trust roll-up over the run's
+policy decisions: any deny → `blocked`, else any needs_review →
+`review_required`, else `trusted`. Serialized into every run JSON.
+
+**Coverage** — the run's own declaration of its observability limits
+(`captured` / `blind_spots` / `enforcement`), ported from wutai's
+WorkPacketCoverage. The scripted runtime stamps every run and trace header
+with an honest one.
+
+**GoalEvent** — one entry in a goal's append-only lifecycle log
+(`introduced / reinforced / replaced / retired`), ported from
+stillmirror-review's goal-events log. Schema-level in v0.1: the object and
+vocabulary exist; automatic lifecycle tracking is roadmap.
+
+**StepRecord.allocated_to / supports_goal** — optional per-step annotations
+(rubric labels and a `yes/no/unknown` mainline flag) so a run can express
+what each step was *for*, not just what it did.
+
 ## Mapping to enterprise platforms
 
 This is deliberately shaped like a miniature ontology layer: stable object

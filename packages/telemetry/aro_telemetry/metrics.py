@@ -27,6 +27,18 @@ RUN_DURATION_SECONDS = Histogram(
     "Wall-clock duration of finished runs",
     buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0),
 )
+QUEUE_RETRIES_TOTAL = Counter(
+    "aro_queue_retries_total", "Queue items sent back to pending with backoff after a failure"
+)
+QUEUE_DEAD_LETTERS_TOTAL = Counter(
+    "aro_queue_dead_letters_total", "Queue items dead-lettered after exhausting retries"
+)
+RATE_LIMITED_TOTAL = Counter(
+    "aro_rate_limited_total", "Run-creation requests rejected by the API rate limit"
+)
+ATTESTATIONS_TOTAL = Counter(
+    "aro_attestations_total", "Human attestations recorded, by decision", ["decision"]
+)
 
 
 class MetricsHooks(RunHooks):

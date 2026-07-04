@@ -14,11 +14,19 @@ What runs where:
 
 | Service    | URL                    | Notes                                    |
 | ---------- | ---------------------- | ---------------------------------------- |
-| api        | http://localhost:8000  | FastAPI (`/api/*`, `/healthz`, `/metrics`) |
+| api        | http://localhost:8000  | FastAPI (`/api/*`, `/healthz`, `/metrics`), healthchecked |
+| postgres   | (internal)             | Run store + work queue (`FOR UPDATE SKIP LOCKED` claims) |
 | prometheus | http://localhost:9090  | Scrapes api:8000 and worker:9100 every 5s |
 | grafana    | http://localhost:3000  | Anonymous access (Admin), dashboard "Agent Runtime Observatory" pre-provisioned |
 
-The worker runs in the background (no host port for its work; metrics on `worker:9100` inside the compose network). The API and worker share the `aro-data` volume mounted at `/data`.
+The worker runs in the background (no host port for its work; metrics on `worker:9100` inside the compose network). API and worker use Postgres via `ARO_DATABASE_URL` (drop that env var to fall back to SQLite) and share the `aro-data` volume at `/data` for trace files.
+
+Worker resilience knobs: `ARO_MAX_ATTEMPTS` (default 3), `ARO_RETRY_BACKOFF_S`
+(default 2, doubles per attempt), and `ARO_CHAOS_FAIL_ATTEMPTS=N` to inject
+deterministic failures and watch retries/dead-letters flow through
+`aro_queue_retries_total` / `aro_queue_dead_letters_total` and
+`GET localhost:8000/api/queue?status=dead`. Run creation is rate-limited by
+`ARO_RATE_LIMIT_PER_MINUTE` (default 120).
 
 ## Generate traffic
 

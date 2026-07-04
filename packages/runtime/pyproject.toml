@@ -3,7 +3,7 @@ name = "aro-runtime"
 version = "0.1.0"
 description = "Deterministic scripted agent runtime with policy gating, trace recording, and replay."
 requires-python = ">=3.11"
-dependencies = ["aro-schema", "pyyaml>=6"]
+dependencies = ["aro-schema", "pyyaml>=6", "psycopg[binary]>=3.2"]
 
 [tool.uv.sources]
 aro-schema = { workspace = true }

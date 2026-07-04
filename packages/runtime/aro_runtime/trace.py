@@ -15,6 +15,7 @@ from typing import Any, TextIO
 from aro_schema import (
     AgentRun,
     Artifact,
+    Coverage,
     EvidenceItem,
     PolicyDecision,
     RiskSignal,
@@ -54,6 +55,9 @@ def load_trace(path: Path) -> tuple[dict, AgentRun]:
                 agent=header["script"].get("agent", "scripted@0.1"),
                 model=header["script"].get("model"),
                 status=RunStatus.RUNNING,
+                coverage=Coverage.model_validate(header["coverage"])
+                if header.get("coverage")
+                else None,
             )
         elif run is None:
             raise ValueError(f"trace {path} has events before run_start")

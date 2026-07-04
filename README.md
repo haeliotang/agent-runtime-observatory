@@ -99,7 +99,12 @@ Nine objects, designed so accountability is structural rather than aspirational
 
 The load-bearing semantic: **`needs_review` executes the step but records
 review debt** — an honest ledger of what a human still owes a look, exposed
-as a Prometheus metric (`aro_review_debt_total`).
+as a Prometheus metric (`aro_review_debt_total`). Debt is consumed by
+**Attestations** (`POST /api/runs/{id}/attestations`): a named human
+accepting, amending, or rejecting a declared scope of the run — with an
+explicitly excluded scope, because approval is never total. The object model
+is field-aligned with my sibling repos' models; see
+[docs/object-model-alignment.md](docs/object-model-alignment.md).
 
 ## Trace → replay → eval, concretely
 
@@ -123,7 +128,10 @@ edits a recorded digest and proves replay flags it.
 - The agent is a deterministic scripted runner — that is what makes replay
   divergence a hard signal, and it means LLM-step recording is a roadmap
   item, not a shipped feature.
-- SQLite + a single worker is the known scale ceiling of v0.1.
+- Every way the system fails is classified in
+  [docs/error-taxonomy.md](docs/error-taxonomy.md), with measurable targets in
+  [docs/slo.md](docs/slo.md) — including two governance SLOs (replay
+  integrity, review-debt consumption) most stacks don't track.
 
 ## Relation to my other repos
 
@@ -146,10 +154,12 @@ Tracked as issues; the next increments are:
 
 1. OTel trace-model deepening (OTLP + Tempo in compose, span links to decisions)
 2. Counterfactual policy replay — evaluate a *new* policy against *old* traces
-3. Grafana review-debt dashboard row + alerting rules
+3. Grafana review-debt dashboard row + alerting rules (SLO sketch in [docs/slo.md](docs/slo.md))
 4. Expanded golden set + nightly regression CI
 5. JSON Schema export of the object model
-6. Worker scale-out: Postgres/Redis queue, k8s worker deployment
+6. ~~Worker scale-out: Postgres queue~~ shipped — Postgres store with
+   `SKIP LOCKED` claims, retry/backoff, dead-lettering, chaos injection;
+   remaining: k8s worker HPA, GHCR image publish
 
 ## Why this matters
 

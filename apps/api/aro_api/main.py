@@ -8,14 +8,19 @@ server proxy, the FastAPI-served production dashboard, and bare curl.
 from __future__ import annotations
 
 import os
+import threading
+import time
 import uuid
 from pathlib import Path
 
 from aro_runtime import CompositeHooks, Workspace, discover_examples, replay_trace, run_example
-from aro_runtime.store import RunStore
+from aro_runtime.store import create_store
+from aro_schema import Attestation, AttestationDecision, digest_text, utcnow
 from aro_telemetry import MetricsHooks, TracingHooks, render_metrics, setup_tracing
-from fastapi import FastAPI, HTTPException, Response
+from aro_telemetry.metrics import ATTESTATIONS_TOTAL, RATE_LIMITED_TOTAL
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -27,10 +32,50 @@ class CreateRunRequest(BaseModel):
     mode: str = "sync"  # "sync" executes inline; "queued" leaves it for the worker
 
 
-def create_app(examples_dir: Path | None = None, data_dir: Path | None = None) -> FastAPI:
+class CreateAttestationRequest(BaseModel):
+    decision: AttestationDecision
+    declared_scope: str
+    attested_by: str
+    excluded_scope: str = ""
+    labels: list[str] = []
+    proposed_by: str | None = None
+    seat_id: str | None = None
+    note: str = ""
+
+
+class _RateLimiter:
+    """Fixed-window limiter for run creation. In-process on purpose: one
+    honest knob (ARO_RATE_LIMIT_PER_MINUTE), not a distributed system."""
+
+    def __init__(self, per_minute: int):
+        self.per_minute = per_minute
+        self._window_start = 0.0
+        self._count = 0
+        self._lock = threading.Lock()
+
+    def allow(self) -> bool:
+        if self.per_minute <= 0:
+            return True
+        now = time.monotonic()
+        with self._lock:
+            if now - self._window_start >= 60:
+                self._window_start = now
+                self._count = 0
+            self._count += 1
+            return self._count <= self.per_minute
+
+
+def create_app(
+    examples_dir: Path | None = None,
+    data_dir: Path | None = None,
+    database_url: str | None = None,
+    rate_limit_per_minute: int | None = None,
+) -> FastAPI:
     examples_dir = Path(examples_dir or os.environ.get("ARO_EXAMPLES_DIR", REPO_ROOT / "examples"))
     data_dir = Path(data_dir or os.environ.get("ARO_DATA_DIR", REPO_ROOT / "data"))
     data_dir.mkdir(parents=True, exist_ok=True)
+    if rate_limit_per_minute is None:
+        rate_limit_per_minute = int(os.environ.get("ARO_RATE_LIMIT_PER_MINUTE", "120"))
 
     setup_tracing("aro-api")
     app = FastAPI(title="agent-runtime-observatory", version="0.1.0")
@@ -41,9 +86,20 @@ def create_app(examples_dir: Path | None = None, data_dir: Path | None = None) -
         allow_headers=["*"],
     )
 
-    store = RunStore(data_dir / "aro.db")
+    store = create_store(database_url=database_url, sqlite_path=data_dir / "aro.db")
     examples = discover_examples(examples_dir)
     hooks = CompositeHooks([MetricsHooks(), TracingHooks()])
+    limiter = _RateLimiter(rate_limit_per_minute)
+
+    @app.middleware("http")
+    async def rate_limit_runs(request: Request, call_next):
+        if request.method == "POST" and request.url.path == "/api/runs" and not limiter.allow():
+            RATE_LIMITED_TOTAL.inc()
+            return JSONResponse(
+                status_code=429,
+                content={"detail": "rate limit exceeded for run creation"},
+            )
+        return await call_next(request)
 
     @app.get("/healthz")
     def healthz() -> dict:
@@ -96,7 +152,36 @@ def create_app(examples_dir: Path | None = None, data_dir: Path | None = None) -
             "task": record["task"].model_dump(mode="json"),
             "example": record["example"],
             "trace_path": record["trace_path"],
+            "attestations": [a.model_dump(mode="json") for a in store.list_attestations(run_id)],
         }
+
+    @app.post("/api/runs/{run_id}/attestations")
+    def create_attestation(run_id: str, request: CreateAttestationRequest) -> dict:
+        record = store.get_run(run_id)
+        if record is None:
+            raise HTTPException(404, f"unknown run: {run_id}")
+        attestation = Attestation(
+            id=f"att-{uuid.uuid4().hex[:12]}",
+            run_id=run_id,
+            seat_id=request.seat_id,
+            decision=request.decision,
+            declared_scope=request.declared_scope,
+            excluded_scope=request.excluded_scope,
+            labels=request.labels,
+            proposed_by=request.proposed_by,
+            attested_by=request.attested_by,
+            note=request.note,
+            # What exactly is being attested: the stored run record, by digest.
+            subject_digest=digest_text(record["run"].model_dump_json()),
+            attested_at=utcnow(),
+        )
+        store.save_attestation(attestation)
+        ATTESTATIONS_TOTAL.labels(decision=attestation.decision.value).inc()
+        return attestation.model_dump(mode="json")
+
+    @app.get("/api/queue")
+    def list_queue(status: str | None = None) -> list[dict]:
+        return store.list_queue(status=status)
 
     @app.get("/api/runs/{run_id}/trace")
     def get_trace(run_id: str) -> Response:

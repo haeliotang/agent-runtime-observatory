@@ -41,10 +41,16 @@ These names are a public contract — the Grafana dashboard in
 | `aro_policy_denials_total` | counter | `rule_id` | steps blocked by policy |
 | `aro_review_debt_total` | counter | `rule_id` | steps flagged `needs_review` (executed, but owed a human look) |
 | `aro_run_duration_seconds` | histogram | — | wall-clock run duration |
+| `aro_queue_retries_total` | counter | — | queue items retried with backoff after a failure |
+| `aro_queue_dead_letters_total` | counter | — | queue items dead-lettered after exhausting retries |
+| `aro_rate_limited_total` | counter | — | run-creation requests rejected with 429 |
+| `aro_attestations_total` | counter | `decision` | human attestations recorded (accept / amend / reject) |
 
 `aro_review_debt_total` is the governance-specific metric: it counts the gap
-between "the system let it happen" and "a human has looked at it". A healthy
-deployment trends it toward zero via review, not via loosening rules.
+between "the system let it happen" and "a human has looked at it". Its
+counterpart `aro_attestations_total` counts debt being *consumed* — the pair
+is SLO #6 in [slo.md](slo.md). A healthy deployment trends the gap toward
+zero via review, not via loosening rules.
 
 ## Logs
 

@@ -13,6 +13,11 @@ from pydantic import BaseModel, Field
 class ScriptedStep(BaseModel):
     tool: str
     args: dict[str, Any] = Field(default_factory=dict)
+    # Optional review-substrate annotations (ported from stillmirror-review's
+    # allocation ledger): which rubric buckets this step serves, and whether
+    # it supports the goal's mainline ("yes" | "no" | "unknown").
+    allocated_to: list[str] = Field(default_factory=list)
+    supports_goal: str = "unknown"
 
 
 class Script(BaseModel):

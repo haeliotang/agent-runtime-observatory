@@ -1,4 +1,18 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: aro
+      POSTGRES_PASSWORD: aro
+      POSTGRES_DB: aro
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aro -d aro"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
   api:
     build:
       context: ..
@@ -8,8 +22,17 @@ services:
       - "8000:8000"
     environment:
       ARO_DATA_DIR: /data
+      ARO_DATABASE_URL: postgresql://aro:aro@postgres:5432/aro
     volumes:
       - aro-data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   worker:
     build:
@@ -19,9 +42,13 @@ services:
     command: ["python", "-m", "aro_worker"]
     environment:
       ARO_DATA_DIR: /data
+      ARO_DATABASE_URL: postgresql://aro:aro@postgres:5432/aro
       ARO_WORKER_METRICS_PORT: "9100"
     volumes:
       - aro-data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   prometheus:
     image: prom/prometheus:latest
@@ -45,3 +72,4 @@ services:
 
 volumes:
   aro-data:
+  pg-data:

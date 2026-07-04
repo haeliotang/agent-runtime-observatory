@@ -1,16 +1,28 @@
-"""SQLite-backed run store and work queue.
+"""Run stores: SQLite (default) and Postgres (via ARO_DATABASE_URL).
 
-Deliberately boring: one file, stdlib sqlite3, denormalized summary columns
-for cheap listing. Redis/Postgres are a roadmap item, not a v0.1 need.
+Both back the same three tables — runs (denormalized summaries for cheap
+listing), queue (work items with retry/dead-letter semantics), attestations
+(humans standing behind runs). The queue contract:
+
+    pending --claim--> running --success--> done
+       ^                  |
+       |                  +--failure, attempts < max--> pending (available_at
+       +--backoff elapses-+                             pushed into the future)
+                          +--failure, attempts >= max--> dead   (dead letter)
+
+Timestamps are stored as ISO-8601 UTC strings in both backends so the
+available_at comparison is a plain lexical compare.
 """
 
 from __future__ import annotations
 
+import os
 import sqlite3
 import threading
+from datetime import datetime
 from pathlib import Path
 
-from aro_schema import AgentRun, RunStatus, Task, utcnow
+from aro_schema import AgentRun, Attestation, RunStatus, Task, utcnow
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS runs (
@@ -30,9 +42,26 @@ CREATE TABLE IF NOT EXISTS queue (
     run_id TEXT NOT NULL,
     example TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending',
+    attempts INTEGER NOT NULL DEFAULT 0,
+    available_at TEXT,
+    last_error TEXT,
     enqueued_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS attestations (
+    id TEXT PRIMARY KEY,
+    run_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    payload TEXT NOT NULL
+);
 """
+
+# Columns added after the first release; applied best-effort so an existing
+# local aro.db keeps working without a migration tool.
+_SQLITE_MIGRATIONS = (
+    "ALTER TABLE queue ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE queue ADD COLUMN available_at TEXT",
+    "ALTER TABLE queue ADD COLUMN last_error TEXT",
+)
 
 
 class RunStore:
@@ -44,6 +73,11 @@ class RunStore:
         self._lock = threading.Lock()
         with self._lock:
             self._conn.executescript(_SCHEMA)
+            for migration in _SQLITE_MIGRATIONS:
+                try:
+                    self._conn.execute(migration)
+                except sqlite3.OperationalError:
+                    pass  # column already exists
             self._conn.commit()
 
     def save_run(
@@ -107,17 +141,21 @@ class RunStore:
     def enqueue(self, run_id: str, example: str) -> int:
         with self._lock:
             cur = self._conn.execute(
-                "INSERT INTO queue (run_id, example, status, enqueued_at) "
-                "VALUES (?, ?, 'pending', ?)",
+                "INSERT INTO queue (run_id, example, status, attempts, enqueued_at) "
+                "VALUES (?, ?, 'pending', 0, ?)",
                 (run_id, example, utcnow().isoformat()),
             )
             self._conn.commit()
             return cur.lastrowid
 
     def claim_next(self) -> dict | None:
+        now = utcnow().isoformat()
         with self._lock:
             row = self._conn.execute(
-                "SELECT * FROM queue WHERE status = 'pending' ORDER BY id LIMIT 1"
+                "SELECT * FROM queue WHERE status = 'pending' "
+                "AND (available_at IS NULL OR available_at <= ?) "
+                "ORDER BY id LIMIT 1",
+                (now,),
             ).fetchone()
             if row is None:
                 return None
@@ -130,5 +168,68 @@ class RunStore:
             self._conn.execute("UPDATE queue SET status = ? WHERE id = ?", (status, queue_id))
             self._conn.commit()
 
+    def retry(self, queue_id: int, attempts: int, available_at: datetime, error: str) -> None:
+        with self._lock:
+            self._conn.execute(
+                "UPDATE queue SET status = 'pending', attempts = ?, available_at = ?, "
+                "last_error = ? WHERE id = ?",
+                (attempts, available_at.isoformat(), error, queue_id),
+            )
+            self._conn.commit()
+
+    def mark_dead(self, queue_id: int, attempts: int, error: str) -> None:
+        with self._lock:
+            self._conn.execute(
+                "UPDATE queue SET status = 'dead', attempts = ?, last_error = ? WHERE id = ?",
+                (attempts, error, queue_id),
+            )
+            self._conn.commit()
+
+    def list_queue(self, status: str | None = None) -> list[dict]:
+        query = "SELECT * FROM queue"
+        params: tuple = ()
+        if status:
+            query += " WHERE status = ?"
+            params = (status,)
+        query += " ORDER BY id DESC LIMIT 100"
+        with self._lock:
+            rows = self._conn.execute(query, params).fetchall()
+        return [dict(row) for row in rows]
+
+    def save_attestation(self, attestation: Attestation) -> None:
+        with self._lock:
+            self._conn.execute(
+                "INSERT OR REPLACE INTO attestations (id, run_id, created_at, payload) "
+                "VALUES (?, ?, ?, ?)",
+                (
+                    attestation.id,
+                    attestation.run_id,
+                    utcnow().isoformat(),
+                    attestation.model_dump_json(),
+                ),
+            )
+            self._conn.commit()
+
+    def list_attestations(self, run_id: str) -> list[Attestation]:
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT payload FROM attestations WHERE run_id = ? ORDER BY created_at",
+                (run_id,),
+            ).fetchall()
+        return [Attestation.model_validate_json(row["payload"]) for row in rows]
+
     def close(self) -> None:
         self._conn.close()
+
+
+def create_store(database_url: str | None = None, sqlite_path: Path | None = None) -> RunStore:
+    """Pick a backend: Postgres when a postgres:// URL is given (or set via
+    ARO_DATABASE_URL), SQLite otherwise."""
+    url = database_url if database_url is not None else os.environ.get("ARO_DATABASE_URL")
+    if url and url.startswith(("postgres://", "postgresql://")):
+        from aro_runtime.pg_store import PostgresRunStore
+
+        return PostgresRunStore(url)
+    if sqlite_path is None:
+        raise ValueError("sqlite_path is required when no Postgres URL is configured")
+    return RunStore(sqlite_path)
