@@ -85,3 +85,12 @@ types with explicit ownership, decisions as first-class data, and
 content-addressed evidence. The same object shapes generalize beyond the
 scripted runtime — an LLM-backed run changes how StepRecords are produced,
 not what they are.
+
+## Alignment with sibling repos
+
+For a field-by-field mapping of this object model against the object models of
+[`wutai`](https://github.com/haeliotang/wutai) (trust-boundary evidence layer)
+and [`stillmirror-review`](https://github.com/haeliotang/stillmirror-review)
+(allocation ledger / review debt), including proposed schema deltas that would
+make this repo a superset spine for all three, see
+[object-model-alignment.md](object-model-alignment.md).
