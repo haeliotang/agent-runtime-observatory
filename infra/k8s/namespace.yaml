@@ -1,0 +1,5 @@
+# Optional Kubernetes reference manifests. Apply with: kubectl apply -k infra/k8s
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aro

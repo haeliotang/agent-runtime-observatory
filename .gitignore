@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+
+# Runtime data (SQLite DB, recorded traces outside goldens)
+data/
+
+# Node
+node_modules/
+apps/web/dist/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Local tooling state
+.stillmirror/

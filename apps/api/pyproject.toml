@@ -1,0 +1,24 @@
+[project]
+name = "aro-api"
+version = "0.1.0"
+description = "FastAPI service exposing runs, traces, replay, and Prometheus metrics."
+requires-python = ">=3.11"
+dependencies = [
+    "aro-schema",
+    "aro-runtime",
+    "aro-telemetry",
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+]
+
+[tool.uv.sources]
+aro-schema = { workspace = true }
+aro-runtime = { workspace = true }
+aro-telemetry = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["aro_api"]

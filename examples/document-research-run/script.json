@@ -1,0 +1,33 @@
+{
+  "task": {
+    "id": "task-research-001",
+    "title": "Summarize the agent governance doc into research notes",
+    "goal_id": "goal-research-001"
+  },
+  "goal": {
+    "id": "goal-research-001",
+    "statement": "Fetch the governance document from the approved docs site and produce a summary note.",
+    "constraints": ["only fetch from allowlisted domains", "cite the source URL"],
+    "owner_seat_id": "seat-owner"
+  },
+  "reviewer_seats": [
+    {
+      "id": "seat-owner",
+      "name": "workspace owner",
+      "role": "owner",
+      "scope": "examples/document-research-run"
+    }
+  ],
+  "agent": "scripted@0.1",
+  "steps": [
+    { "tool": "web_fetch", "args": { "url": "https://docs.example.com/agent-governance.md" } },
+    { "tool": "summarize", "args": { "text": "${step:0.output}" } },
+    {
+      "tool": "write_file",
+      "args": {
+        "path": "notes/research-summary.md",
+        "content": "# Research notes\n\nSource: https://docs.example.com/agent-governance.md\n\nSummary: ${step:1.output}\n"
+      }
+    }
+  ]
+}

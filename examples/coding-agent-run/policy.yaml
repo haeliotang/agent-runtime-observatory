@@ -1,0 +1,25 @@
+id: baseline-v1
+description: Baseline guardrails for workspace-scoped coding agents
+default: allow
+rules:
+  - id: review-sensitive-read
+    description: Reading files that look like credentials requires human review
+    tool: read_file
+    args_regex: "(\\.env|secrets|credentials|id_rsa)"
+    action: needs_review
+    severity: medium
+    category: sensitive-read
+  - id: deny-destructive-shell
+    description: Destructive or data-moving shell commands are blocked
+    tool: shell
+    args_regex: "(rm -rf|--data|scp |nc |mkfs|> /dev/)"
+    action: deny
+    severity: high
+    category: destructive-shell
+  - id: deny-unlisted-domain
+    description: Network fetches outside the domain allowlist are blocked
+    tool: web_fetch
+    domain_not_in: ["docs.example.com"]
+    action: deny
+    severity: high
+    category: exfiltration

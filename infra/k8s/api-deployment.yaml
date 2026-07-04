@@ -1,0 +1,48 @@
+# Optional reference manifest. Note: /data is an emptyDir, so state is per-pod
+# and ephemeral -- suitable for demos, not production.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aro-api
+  namespace: aro
+  labels:
+    app.kubernetes.io/name: aro-api
+    app.kubernetes.io/part-of: agent-runtime-observatory
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: aro-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: aro-api
+        app.kubernetes.io/part-of: agent-runtime-observatory
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/haeliotang/agent-runtime-observatory:latest
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: ARO_DATA_DIR
+              value: /data
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}

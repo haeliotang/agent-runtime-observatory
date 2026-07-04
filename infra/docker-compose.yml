@@ -1,0 +1,47 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    image: agent-runtime-observatory:latest
+    ports:
+      - "8000:8000"
+    environment:
+      ARO_DATA_DIR: /data
+    volumes:
+      - aro-data:/data
+
+  worker:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    image: agent-runtime-observatory:latest
+    command: ["python", "-m", "aro_worker"]
+    environment:
+      ARO_DATA_DIR: /data
+      ARO_WORKER_METRICS_PORT: "9100"
+    volumes:
+      - aro-data:/data
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+
+volumes:
+  aro-data:

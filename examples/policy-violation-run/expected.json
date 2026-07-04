@@ -1,0 +1,14 @@
+{
+  "final_status": "completed",
+  "policy_decisions": [
+    { "step_index": 1, "rule_id": "review-sensitive-read", "decision": "needs_review" },
+    { "step_index": 2, "rule_id": "deny-destructive-shell", "decision": "deny" },
+    { "step_index": 3, "rule_id": "deny-unlisted-domain", "decision": "deny" }
+  ],
+  "risk_signals": [
+    { "step_index": 1, "severity": "medium", "category": "sensitive-read" },
+    { "step_index": 2, "severity": "high", "category": "destructive-shell" },
+    { "step_index": 3, "severity": "high", "category": "exfiltration" }
+  ],
+  "artifacts": [{ "path": "incident-report.md" }]
+}

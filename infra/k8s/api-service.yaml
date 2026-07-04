@@ -1,0 +1,17 @@
+# Optional reference manifest.
+apiVersion: v1
+kind: Service
+metadata:
+  name: aro-api
+  namespace: aro
+  labels:
+    app.kubernetes.io/name: aro-api
+    app.kubernetes.io/part-of: agent-runtime-observatory
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: aro-api
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

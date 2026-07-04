@@ -1,0 +1,46 @@
+[project]
+name = "agent-runtime-observatory"
+version = "0.1.0"
+description = "A reference implementation for tracing, replaying, evaluating, and governing agent runs across trust boundaries."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+dependencies = [
+    "aro-schema",
+    "aro-runtime",
+    "aro-telemetry",
+    "aro-evals",
+    "aro-api",
+    "aro-worker",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "httpx>=0.27",
+    "ruff>=0.8",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/*", "apps/api", "apps/worker"]
+
+[tool.uv.sources]
+aro-schema = { workspace = true }
+aro-runtime = { workspace = true }
+aro-telemetry = { workspace = true }
+aro-evals = { workspace = true }
+aro-api = { workspace = true }
+aro-worker = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

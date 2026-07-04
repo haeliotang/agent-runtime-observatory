@@ -1,0 +1,42 @@
+{
+  "task": {
+    "id": "task-coding-001",
+    "title": "Fix the failing test in the sample app",
+    "goal_id": "goal-coding-001"
+  },
+  "goal": {
+    "id": "goal-coding-001",
+    "statement": "Make test_app.py pass by fixing the arithmetic bug in app.py, and leave a report of what changed.",
+    "constraints": ["only modify files inside the workspace", "do not delete tests"],
+    "owner_seat_id": "seat-owner"
+  },
+  "reviewer_seats": [
+    {
+      "id": "seat-owner",
+      "name": "workspace owner",
+      "role": "owner",
+      "scope": "examples/coding-agent-run"
+    }
+  ],
+  "agent": "scripted@0.1",
+  "steps": [
+    { "tool": "read_file", "args": { "path": "app.py" } },
+    { "tool": "run_tests", "args": {} },
+    {
+      "tool": "apply_patch",
+      "args": {
+        "path": "app.py",
+        "find": "# BUG: subtracts instead of adding\n    return a - b",
+        "replace": "return a + b"
+      }
+    },
+    { "tool": "run_tests", "args": {} },
+    {
+      "tool": "write_file",
+      "args": {
+        "path": "report.md",
+        "content": "# Fix report\n\nPatched `app.py`: `add()` subtracted instead of adding.\n\nTest result after patch: ${step:3.output}\n"
+      }
+    }
+  ]
+}

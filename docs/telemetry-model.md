@@ -1,0 +1,54 @@
+# Telemetry model
+
+The runtime emits telemetry through the `RunHooks` interface
+(`packages/runtime/aro_runtime/hooks.py`), so `aro_runtime` itself has no
+telemetry dependencies. `aro_telemetry` provides two hook implementations that
+the API and worker compose.
+
+## Traces (OpenTelemetry)
+
+One span per run, one child span per step. Step spans are created at step end
+with explicit start/end timestamps taken from the StepRecord, so span timing
+equals recorded timing.
+
+| Span | Attributes |
+|---|---|
+| `agent_run` | `aro.run_id`, `aro.task_id`, `aro.agent`, `aro.status`, `aro.steps`, `aro.denials` |
+| `step:<tool>` | `aro.run_id`, `aro.step_index`, `aro.tool`, `aro.input_digest`, `aro.output_digest`, `aro.decision`, `aro.rule_id`, `aro.error` |
+
+Putting digests and policy verdicts on spans is the point: a trace backend
+becomes a queryable audit surface ("show me all spans where
+`aro.decision = deny`"), not just a latency waterfall.
+
+Exporter selection (`aro_telemetry/otel.py`):
+
+| Environment | Behavior |
+|---|---|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` set | OTLP/HTTP batch export |
+| `ARO_OTEL_CONSOLE=1` | spans printed to stdout |
+| neither | spans stay in-process (no-op cost) |
+
+## Metrics (Prometheus)
+
+Exposed at `GET /metrics` on the API (:8000) and on the worker (:9100).
+These names are a public contract — the Grafana dashboard in
+`infra/grafana/dashboards/` queries them by name.
+
+| Metric | Type | Labels | Meaning |
+|---|---|---|---|
+| `aro_runs_total` | counter | `status` | runs finished, by final status |
+| `aro_steps_total` | counter | `tool`, `decision` | steps executed or blocked |
+| `aro_policy_denials_total` | counter | `rule_id` | steps blocked by policy |
+| `aro_review_debt_total` | counter | `rule_id` | steps flagged `needs_review` (executed, but owed a human look) |
+| `aro_run_duration_seconds` | histogram | — | wall-clock run duration |
+
+`aro_review_debt_total` is the governance-specific metric: it counts the gap
+between "the system let it happen" and "a human has looked at it". A healthy
+deployment trends it toward zero via review, not via loosening rules.
+
+## Logs
+
+The trace file itself (`data/traces/<run_id>.jsonl`) is the structured log of
+record: one JSON event per line (`run_start`, `policy_decision`,
+`risk_signal`, `evidence`, `artifact`, `step`, `run_end`). Ship it to any
+JSONL-speaking pipeline; replay only ever needs the file back.
