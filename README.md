@@ -118,6 +118,17 @@ shape — and CI fails if any of it drifts. Tampering is caught too:
 [tests/replay/test_tamper_detection.py](tests/replay/test_tamper_detection.py)
 edits a recorded digest and proves replay flags it.
 
+## The observability plane, live
+
+The compose stack (`infra/`) runs API + worker on a Postgres-backed queue,
+scraped by Prometheus, rendered by a pre-provisioned Grafana dashboard —
+run rate, p95 duration, steps by tool/decision, policy denials by rule, and
+review debt by rule:
+
+![Grafana dashboard with live run, denial, and review-debt metrics](docs/assets/grafana-dashboard.png)
+
+Targets and alerting sketches for these panels live in [docs/slo.md](docs/slo.md).
+
 ## Failure cases, honestly
 
 - A rule set to `needs_review` does not *stop* anything; if nobody consumes

@@ -36,7 +36,9 @@ curl -X POST localhost:8000/api/runs \
   -d '{"example":"policy-violation-run"}'
 ```
 
-Repeat a few times (also try `coding-agent-run` and `document-research-run`), then watch the panels in Grafana.
+Repeat a few times (also try `coding-agent-run` and `document-research-run`), then watch the panels in Grafana:
+
+![Grafana dashboard](../docs/assets/grafana-dashboard.png)
 
 ## Kubernetes (optional)
 
