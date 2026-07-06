@@ -184,3 +184,12 @@ this README is enforced by a test you can run.
 ## License
 
 [Apache-2.0](LICENSE)
+
+## Intervention auditing: wutai-clinic
+
+[`packages/clinic`](packages/clinic) — a runtime-verifiable paired-intervention audit
+harness for coding agents: preregistration → runtime trigger-hit verification →
+paired control/treatment arms → manipulation checks → per-task noise floor (ε) →
+official SWE-bench outcome anchoring → null-reporting discipline. Applied honestly,
+it has killed every deployable intervention it tested; sensitivity is calibrated via
+an oracle positive control (Fisher p=0.0040). See its README for the full protocol.
