@@ -8,7 +8,6 @@ import sys
 import tempfile
 from datetime import datetime, timezone
 
-UTC = timezone.utc  # py3.10 compat: datetime.UTC is 3.11+
 from pathlib import Path
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
@@ -26,11 +25,11 @@ from wutai_clinic.adapters.sweagent_live import (  # noqa: E402
 from wutai_clinic.intervention.paired_fork import default_protocol  # noqa: E402
 from wutai_clinic.intervention.replay_protocol import InterventionProtocol, StateCapsule  # noqa: E402
 
+UTC = timezone.utc  # py3.10 compat: datetime.UTC is 3.11+
 
 def default_output_dir() -> Path:
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     return Path(tempfile.gettempdir()) / f"wutai-sweagent-live-single-{stamp}"
-
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -93,7 +92,6 @@ def main() -> None:
         "capsule": str(result["capsule_path"]) if result["capsule_path"] else None,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True))
-
 
 if __name__ == "__main__":
     main()

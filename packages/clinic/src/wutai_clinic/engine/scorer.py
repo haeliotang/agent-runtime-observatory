@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-UTC = timezone.utc  # py3.10 compat: datetime.UTC is 3.11+
 from typing import Any
 
 from wutai_clinic.schemas import ControlledScorecard, DualScorecard, NativeScorecard
 
 from .grammar_gate import classify_route
 
+UTC = timezone.utc  # py3.10 compat: datetime.UTC is 3.11+
 
 def score_response(response: str, expected_route: str) -> NativeScorecard:
     route = classify_route(response)
@@ -18,7 +18,6 @@ def score_response(response: str, expected_route: str) -> NativeScorecard:
         native_tool_route_count=int(expected_route == "tool" and route == "tool"),
         native_tool_route_total=int(expected_route == "tool"),
     )
-
 
 def score_controlled(
     response: str,
@@ -37,7 +36,6 @@ def score_controlled(
         raw_payload_persistence=bool(telem.get("raw_payload_persistence", False)),
     )
 
-
 def native_scorecard_from_phase3a_report(report: dict[str, Any]) -> NativeScorecard:
     summary = report.get("fresh_generation_summary") or {}
     repairs = report.get("repair_summary") or {}
@@ -50,7 +48,6 @@ def native_scorecard_from_phase3a_report(report: dict[str, Any]) -> NativeScorec
         native_tool_route_count=int(summary.get("native_tool_route_count", 0) or 0),
         native_tool_route_total=int(summary.get("tool_record_count", 0) or 0),
     )
-
 
 def controlled_scorecard_from_phase3a_report(report: dict[str, Any]) -> ControlledScorecard:
     summary = report.get("fresh_generation_summary") or {}
@@ -78,7 +75,6 @@ def controlled_scorecard_from_phase3a_report(report: dict[str, Any]) -> Controll
         raw_payload_persistence=not bool(checks.get("no_raw_or_gated_payload_stored", True)),
     )
 
-
 def dual_scorecard_from_phase3a_report(report: dict[str, Any]) -> DualScorecard:
     inputs = report.get("inputs") or {}
     return DualScorecard(
@@ -88,7 +84,6 @@ def dual_scorecard_from_phase3a_report(report: dict[str, Any]) -> DualScorecard:
         adapter_path=str(inputs.get("adapter_path") or ""),
         eval_suite=str(inputs.get("eval_suite") or inputs.get("rollout_report") or ""),
     )
-
 
 def score_suite(responses: list[dict[str, Any]], eval_suite: list[dict[str, Any]]) -> DualScorecard:
     expected = {str(item.get("id")): str(item.get("expected_route", "text")) for item in eval_suite}

@@ -8,7 +8,6 @@ import sys
 import tempfile
 from datetime import datetime, timezone
 
-UTC = timezone.utc  # py3.10 compat: datetime.UTC is 3.11+
 from pathlib import Path
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +17,7 @@ if str(SRC_ROOT) not in sys.path:
 
 from wutai_clinic.intervention.paired_fork import run_paired_fork_dry_run  # noqa: E402
 
+UTC = timezone.utc  # py3.10 compat: datetime.UTC is 3.11+
 
 def parse_optional_bool(value: str | None) -> bool | None:
     if value is None:
@@ -29,11 +29,9 @@ def parse_optional_bool(value: str | None) -> bool | None:
         return False
     raise argparse.ArgumentTypeError("expected true/false or resolved/unresolved")
 
-
 def default_output_dir() -> Path:
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     return Path(tempfile.gettempdir()) / f"wutai-paired-fork-dry-run-{stamp}"
-
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -68,7 +66,6 @@ def main() -> None:
         "events": str(result["events_path"]),
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True))
-
 
 if __name__ == "__main__":
     main()
