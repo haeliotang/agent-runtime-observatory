@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wutai-clinic"
+version = "0.1.0"
+description = "Runtime-verifiable paired-intervention audit harness for coding agents."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Haelio Tang" }]
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.24",
+  "pyyaml>=6",
+  "typer>=0.12",
+]
+
+[project.scripts]
+wutai-clinic = "wutai_clinic.cli:app"
+
+[project.optional-dependencies]
+swebench = [
+  "swebench",
+]
+mlx = [
+  "mlx-lm",
+]
+dev = [
+  "pytest>=8",
+  "ruff>=0.8",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
