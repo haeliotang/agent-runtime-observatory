@@ -3,6 +3,7 @@
 Single-file, zero external dependencies. All styles inline, all graphics
 inline SVG.  Read-only renderer: never writes to evidence root.
 """
+
 from __future__ import annotations
 
 import html
@@ -51,6 +52,7 @@ def _infer_instance(path: Path, data: dict[str, Any]) -> str:
 
 
 # ── collect_pair_outcomes ────────────────────────────────────────────────────
+
 
 def collect_pair_outcomes(root: Path) -> list[dict[str, Any]]:
     """Scan root for official-eval report/scorecard/summary files.
@@ -186,9 +188,7 @@ def collect_evidence_dag(root: Path) -> dict[str, Any]:
     If >150 nodes, only pair-related nodes are returned and a truncation
     note is included.
     """
-    all_files = sorted(
-        p for p in root.rglob("*.json") if p.is_file()
-    ) + sorted(
+    all_files = sorted(p for p in root.rglob("*.json") if p.is_file()) + sorted(
         p for p in root.rglob("*.jsonl") if p.is_file()
     )
 
@@ -198,9 +198,7 @@ def collect_evidence_dag(root: Path) -> dict[str, Any]:
     truncated = False
     truncated_count = 0
     if len(all_files) > MAX_DAG_NODES:
-        truncated_count = len(all_files) - sum(
-            1 for f in all_files if _is_pair_related(str(f))
-        )
+        truncated_count = len(all_files) - sum(1 for f in all_files if _is_pair_related(str(f)))
         all_files = [f for f in all_files if _is_pair_related(str(f))]
         truncated = True
 
@@ -216,9 +214,7 @@ def collect_evidence_dag(root: Path) -> dict[str, Any]:
             {
                 "id": str(f),
                 "name": f.name,
-                "has_manifest": (
-                    "manifest" in f.name.lower() or f.parent in manifest_dirs
-                ),
+                "has_manifest": ("manifest" in f.name.lower() or f.parent in manifest_dirs),
             }
         )
 
@@ -299,7 +295,7 @@ def _legend_html() -> str:
     items = "".join(
         f'<span class="legend-item">'
         f'<span class="swatch" style="background:{color}"></span>'
-        f'{html.escape(label)}</span>'
+        f"{html.escape(label)}</span>"
         for color, label in _LEGEND_ITEMS
     )
     return f'<div class="legend">{items}</div>'
@@ -309,23 +305,19 @@ def _str_section(analysis: dict[str, Any] | None) -> str:
     if analysis is None:
         return (
             '<div class="section">'
-            '<h2>STR View</h2>'
+            "<h2>STR View</h2>"
             '<p class="note">Not provided. Pass --analysis to include per-trajectory STR data.</p>'
-            '</div>'
+            "</div>"
         )
     # Render text summary from analysis dict — no external SVG generation required
     esc = html.escape
     rows = []
     for traj_id, metrics in (analysis.get("metrics") or {}).items():
         avg_str = metrics.get("avg_str", "n/a")
-        rows.append(
-            f"<tr><td>{esc(str(traj_id))}</td><td>{esc(str(avg_str))}</td></tr>"
-        )
+        rows.append(f"<tr><td>{esc(str(traj_id))}</td><td>{esc(str(avg_str))}</td></tr>")
     table = (
         "<table border='1' cellpadding='4' style='border-collapse:collapse'>"
-        "<tr><th>trajectory_id</th><th>avg_str</th></tr>"
-        + "".join(rows)
-        + "</table>"
+        "<tr><th>trajectory_id</th><th>avg_str</th></tr>" + "".join(rows) + "</table>"
     )
     return f'<div class="section"><h2>STR View</h2>{table}</div>'
 
@@ -383,9 +375,7 @@ def build_html(
     for p in pairs:
         if p.get("instance_id") == "_unparsed":
             files = p.get("_unparsed_files", [])
-            items = "".join(
-                f"<li>{esc(str(f))}</li>" for f in files
-            )
+            items = "".join(f"<li>{esc(str(f))}</li>" for f in files)
             unparsed_html = (
                 f'<p class="note" style="color:#b71c1c">'
                 f"Warning: {len(files)} file(s) could not be parsed:</p>"
@@ -425,7 +415,7 @@ def build_html(
     Nodes: {len(dag.get("nodes", []))} &nbsp;|&nbsp;
     Edges: {len(dag.get("edges", []))} &nbsp;|&nbsp;
     Edge basis: path_reference (filename substring match)
-    {' &nbsp;|&nbsp; <strong style="color:#b71c1c">[TRUNCATED: pair-related subgraph only, ' + str(truncated_count) + ' nodes omitted]</strong>' if truncated else ''}
+    {' &nbsp;|&nbsp; <strong style="color:#b71c1c">[TRUNCATED: pair-related subgraph only, ' + str(truncated_count) + " nodes omitted]</strong>" if truncated else ""}
   </p>
   <div class="overflow">
 {evidence_dag_svg}
@@ -443,6 +433,7 @@ def build_html(
 
 
 # ── write_html_report ────────────────────────────────────────────────────────
+
 
 def write_html_report(
     root: Path,

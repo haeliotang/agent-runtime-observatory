@@ -3,7 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from wutai_clinic.adapters.base import RuntimePermissionPolicy
-from wutai_clinic.adapters.sweagent import MappingReadOnlyProbe, SWEAgentCapsuleConfig, SWEAgentCapsuleExtractor
+from wutai_clinic.adapters.sweagent import (
+    MappingReadOnlyProbe,
+    SWEAgentCapsuleConfig,
+    SWEAgentCapsuleExtractor,
+)
 from wutai_clinic.adapters.sweagent_live import SWEAgentLiveSingleSpec, run_sweagent_live_single
 from wutai_clinic.intervention.hybrid_runner import CapsuleBuildContext
 from wutai_clinic.intervention.paired_fork import (
@@ -326,8 +330,10 @@ def test_sweagent_live_single_archives_native_patch_artifacts(tmp_path: Path) ->
     assert report["patch_archived"] is True
     assert report["patch_source_kind"] == "native_patch_file"
     assert report["source_task_id"] == source_task_id
-    assert (tmp_path / "out" / "sweagent_live_single.patch").read_text(encoding="utf-8").startswith(
-        "diff --git"
+    assert (
+        (tmp_path / "out" / "sweagent_live_single.patch")
+        .read_text(encoding="utf-8")
+        .startswith("diff --git")
     )
     assert (tmp_path / "out" / "sweagent_live_single.pred").exists()
     assert (tmp_path / "out" / "sweagent_live_single.traj").exists()

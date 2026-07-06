@@ -46,7 +46,9 @@ def _artifact(path: Path) -> dict[str, Any]:
     }
 
 
-def _anchor_plan_rows(*, anchors: list[str], k_reps: int, protocol: ProtocolB1) -> list[dict[str, Any]]:
+def _anchor_plan_rows(
+    *, anchors: list[str], k_reps: int, protocol: ProtocolB1
+) -> list[dict[str, Any]]:
     rows = []
     for rank, anchor in enumerate(anchors, start=1):
         rows.append(
@@ -75,14 +77,20 @@ def _anchor_plan_rows(*, anchors: list[str], k_reps: int, protocol: ProtocolB1) 
     return rows
 
 
-def route_b1_plan_report(*, prereg_manifest: dict[str, Any], protocol: ProtocolB1, anchor_rows: list[dict[str, Any]]) -> dict[str, Any]:
+def route_b1_plan_report(
+    *, prereg_manifest: dict[str, Any], protocol: ProtocolB1, anchor_rows: list[dict[str, Any]]
+) -> dict[str, Any]:
     design = prereg_manifest.get("design") or {}
     manifest_anchors = list(design.get("anchors") or [])
     plan_anchors = [row["source_task_id"] for row in anchor_rows]
     scannable = {"protocol_runtime_visible": protocol.runtime_visible(), "anchor_rows": anchor_rows}
     gates = {
-        "prereg_status_is_preregistered_not_authorized": prereg_manifest.get("status") == EXPECTED_PREREG_STATUS,
-        "prereg_blocks_live_authorization": (prereg_manifest.get("live_authorization") or {}).get("authorized") is False,
+        "prereg_status_is_preregistered_not_authorized": prereg_manifest.get("status")
+        == EXPECTED_PREREG_STATUS,
+        "prereg_blocks_live_authorization": (prereg_manifest.get("live_authorization") or {}).get(
+            "authorized"
+        )
+        is False,
         "anchors_present": len(anchor_rows) > 0,
         "plan_anchors_match_prereg": plan_anchors == manifest_anchors,
         "protocol_is_replay_free": protocol.guard.replay_free is True,
@@ -91,11 +99,13 @@ def route_b1_plan_report(*, prereg_manifest: dict[str, Any], protocol: ProtocolB
             set(protocol.guard.forbidden_payload_categories)
         ),
         # Amendment A / M2b: reproduction is issue-text-only, never FAIL_TO_PASS-derived.
-        "payload_provenance_is_issue_text_only": protocol.action.payload_provenance == "issue_text_only",
+        "payload_provenance_is_issue_text_only": protocol.action.payload_provenance
+        == "issue_text_only",
         "official_test_identity_in_forbidden_categories": "official_test_identity"
         in set(protocol.guard.forbidden_payload_categories),
         "anchor_issue_repro_eligibility_pending_screen": all(
-            row.get("issue_repro_eligibility") == "pending_problem_statement_screen" for row in anchor_rows
+            row.get("issue_repro_eligibility") == "pending_problem_statement_screen"
+            for row in anchor_rows
         ),
         "k_reps_positive": all(int(row.get("reps_per_arm") or 0) > 0 for row in anchor_rows),
         "no_oracle_tokens_in_runtime_visible_plan": not find_oracle_tokens(scannable),
@@ -137,14 +147,18 @@ def route_b1_plan_report(*, prereg_manifest: dict[str, Any], protocol: ProtocolB
     )
 
 
-def write_route_b1_plan_evidence(*, prereg_manifest: dict[str, Any], output_dir: Path, input_artifacts: list[Path] | None = None) -> dict[str, Any]:
+def write_route_b1_plan_evidence(
+    *, prereg_manifest: dict[str, Any], output_dir: Path, input_artifacts: list[Path] | None = None
+) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
     design = prereg_manifest.get("design") or {}
     anchors = list(design.get("anchors") or [])
     k_reps = int(design.get("k_reps_per_arm") or 5)
     protocol = protocol_b1_template()
     anchor_rows = _anchor_plan_rows(anchors=anchors, k_reps=k_reps, protocol=protocol)
-    report = route_b1_plan_report(prereg_manifest=prereg_manifest, protocol=protocol, anchor_rows=anchor_rows)
+    report = route_b1_plan_report(
+        prereg_manifest=prereg_manifest, protocol=protocol, anchor_rows=anchor_rows
+    )
 
     protocol_path = output_dir / "protocol_b1.json"
     anchors_path = output_dir / "b1_anchor_plan.jsonl"
@@ -168,14 +182,21 @@ def write_route_b1_plan_evidence(*, prereg_manifest: dict[str, Any], output_dir:
     }
 
 
-def route_b1_antileak_report(*, protocol: ProtocolB1, anchor_rows: list[dict[str, Any]], gold_task_ids: list[str], plan_dir: Path) -> dict[str, Any]:
+def route_b1_antileak_report(
+    *,
+    protocol: ProtocolB1,
+    anchor_rows: list[dict[str, Any]],
+    gold_task_ids: list[str],
+    plan_dir: Path,
+) -> dict[str, Any]:
     # Scan the runtime-visible plan (protocol trigger/action + per-anchor payload
     # contract) for any oracle/answer leakage. The guard's forbidden-category
     # declaration is intentionally excluded (denial list, not payload content).
     runtime_visible = {
         "protocol_runtime_visible": protocol.runtime_visible(),
         "anchor_payload_contracts": [
-            row.get("arms", {}).get("treatment", {}).get("payload_field_contract") for row in anchor_rows
+            row.get("arms", {}).get("treatment", {}).get("payload_field_contract")
+            for row in anchor_rows
         ],
     }
     plan_anchor_ids = [row["source_task_id"] for row in anchor_rows]
@@ -186,7 +207,8 @@ def route_b1_antileak_report(*, protocol: ProtocolB1, anchor_rows: list[dict[str
         ),
         "payload_fields_are_deployable_whitelist_only": bool(protocol.action.payload_fields),
         # Amendment A / M2b — issue-text-only provenance + no official test identity.
-        "payload_provenance_issue_text_only": protocol.action.payload_provenance == "issue_text_only",
+        "payload_provenance_issue_text_only": protocol.action.payload_provenance
+        == "issue_text_only",
         "no_official_test_identity_in_payload": not find_oracle_tokens(
             {"provenance": protocol.action.payload_provenance, "payload": runtime_visible}
         ),
@@ -195,7 +217,9 @@ def route_b1_antileak_report(*, protocol: ProtocolB1, anchor_rows: list[dict[str
         "no_secret_literals": no_secret_literal(runtime_visible),
         "all_anchors_have_gold_for_live_content_diff": (
             bool(gold_task_ids) and all(a in set(gold_task_ids) for a in plan_anchor_ids)
-        ) if gold_task_ids else True,
+        )
+        if gold_task_ids
+        else True,
         "plan_dir_exists": plan_dir.is_dir(),
     }
     return generate_report(
@@ -221,9 +245,17 @@ def route_b1_antileak_report(*, protocol: ProtocolB1, anchor_rows: list[dict[str
     )
 
 
-def write_route_b1_antileak_evidence(*, plan_dir: Path, output_dir: Path, gold_task_ids: list[str] | None = None, input_artifacts: list[Path] | None = None) -> dict[str, Any]:
+def write_route_b1_antileak_evidence(
+    *,
+    plan_dir: Path,
+    output_dir: Path,
+    gold_task_ids: list[str] | None = None,
+    input_artifacts: list[Path] | None = None,
+) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    protocol = ProtocolB1.from_dict(json.loads((plan_dir / "protocol_b1.json").read_text(encoding="utf-8")))
+    protocol = ProtocolB1.from_dict(
+        json.loads((plan_dir / "protocol_b1.json").read_text(encoding="utf-8"))
+    )
     anchors_path = plan_dir / "b1_anchor_plan.jsonl"
     anchor_rows = [
         json.loads(line)

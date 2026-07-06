@@ -72,7 +72,9 @@ def assemble_cells(
         arm = str(report.get("arm_type"))
         key = (anchor, arm, rep)
         if key not in resolved_map:
-            incomplete.append({"anchor": anchor, "arm": arm, "rep": rep, "reason": "missing_resolved_label"})
+            incomplete.append(
+                {"anchor": anchor, "arm": arm, "rep": rep, "reason": "missing_resolved_label"}
+            )
             continue
         cells.append(cell_from_arm_report(report, rep=rep, resolved=resolved_map[key]))
     return {

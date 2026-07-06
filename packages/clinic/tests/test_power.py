@@ -100,6 +100,5 @@ def test_write_power_report_creates_artifacts(tmp_path: Path) -> None:
     manifest = json.loads(manifest_path.read_text())
     assert manifest["decision"] == report["decision"]
     assert any(
-        entry["path"].endswith("protocol_v2_power_report.json")
-        for entry in manifest["artifacts"]
+        entry["path"].endswith("protocol_v2_power_report.json") for entry in manifest["artifacts"]
     )

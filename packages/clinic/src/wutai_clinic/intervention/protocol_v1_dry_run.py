@@ -89,7 +89,9 @@ def _all_pairs(plan: dict[str, Any], predicate: Any) -> bool:
     return bool(pairs) and all(predicate(row) for row in pairs)
 
 
-def protocol_v1_dry_run_gates(plan: dict[str, Any], events: list[dict[str, Any]]) -> dict[str, bool]:
+def protocol_v1_dry_run_gates(
+    plan: dict[str, Any], events: list[dict[str, Any]]
+) -> dict[str, bool]:
     pairs = plan.get("pairs") or []
     protocol_rows_valid = True
     protocol_hashes_match = True

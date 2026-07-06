@@ -364,9 +364,7 @@ def sweagent_live_plan_report(
         "run_single_adapter_available": True,
         "requires_docker_ack": policy.allow_docker,
         "requires_external_provider_ack": policy.allow_external_provider,
-        "requires_official_eval_ack": policy.allow_official_eval
-        if require_official_eval
-        else True,
+        "requires_official_eval_ack": policy.allow_official_eval if require_official_eval else True,
         "run_single_not_started": True,
         "generalized_uplift_claim_not_made": True,
     }

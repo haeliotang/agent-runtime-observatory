@@ -105,7 +105,9 @@ def test_sweagent_protocol_v1_preflight_blocks_when_dry_run_not_passed(tmp_path:
     assert report["passed"] is False
     assert report["decision"] == "protocol_v1_sweagent_adapter_preflight_blocked"
     assert report["gates"]["dry_run_report_passed"] is False
-    assert report["continuation_policy"]["allow_protocol_v1_constraint_hook_implementation"] is False
+    assert (
+        report["continuation_policy"]["allow_protocol_v1_constraint_hook_implementation"] is False
+    )
     assert report["continuation_policy"]["allow_protocol_v1_real_run"] is False
 
 

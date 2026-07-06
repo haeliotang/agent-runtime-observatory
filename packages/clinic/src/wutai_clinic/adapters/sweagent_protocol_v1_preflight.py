@@ -98,11 +98,7 @@ def _planned_command(
             "--ack-docker",
             "--ack-external-provider",
         ]
-        + (
-            ["--source-task-id", shlex.quote(source_task_id)]
-            if source_task_id is not None
-            else []
-        )
+        + (["--source-task-id", shlex.quote(source_task_id)] if source_task_id is not None else [])
     )
 
 
@@ -223,7 +219,9 @@ def sweagent_protocol_v1_preflight_gates(
             for event in events
         ),
         "official_eval_identifiers_not_runtime_visible": bool(events)
-        and all(event.get("official_eval_identifiers_runtime_visible") is not True for event in events),
+        and all(
+            event.get("official_eval_identifiers_runtime_visible") is not True for event in events
+        ),
         "raw_payload_logging_disabled": bool(events)
         and all(event["raw_payload_logged"] is False for event in events),
     }
@@ -350,7 +348,9 @@ def write_sweagent_protocol_v1_preflight_evidence(
             "continuation_policy": report["continuation_policy"],
         },
     )
-    artifacts = [_artifact(path) for path in [report_path, events_path, commands_path, summary_path]]
+    artifacts = [
+        _artifact(path) for path in [report_path, events_path, commands_path, summary_path]
+    ]
     artifacts.extend(_artifact(path) for path in protocol_paths)
     artifacts.extend(_artifact(path) for path in input_artifacts or [])
     manifest = generate_manifest(

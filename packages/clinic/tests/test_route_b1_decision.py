@@ -31,7 +31,11 @@ def _det_fail_control(reps):
 
 # --- anchor verdict ------------------------------------------------------------
 def test_verdict_signal_when_treatment_resolves_and_control_det_fails() -> None:
-    v = anchor_verdict(anchor="a", **_det_fail_control(5), **_clean_treatment(5, [False, False, True, False, False]))
+    v = anchor_verdict(
+        anchor="a",
+        **_det_fail_control(5),
+        **_clean_treatment(5, [False, False, True, False, False]),
+    )
     assert v["verdict"] == "signal_of_life"
     assert v["counted"] is True
 
@@ -43,7 +47,10 @@ def test_verdict_no_uplift_when_both_fail() -> None:
 
 
 def test_verdict_not_counted_when_control_not_deterministic_fail() -> None:
-    ctrl = {"control_resolved": [False, True, False, False, False], "control_injection_zero": [True] * 5}
+    ctrl = {
+        "control_resolved": [False, True, False, False, False],
+        "control_injection_zero": [True] * 5,
+    }
     v = anchor_verdict(anchor="a", **ctrl, **_clean_treatment(5, [True] * 5))
     assert v["verdict"] == "anchor_control_not_deterministic_fail"
     assert v["counted"] is False
@@ -65,7 +72,11 @@ def test_verdict_not_counted_on_all_trigger_miss_or_leak() -> None:
 def test_decision_signal_of_life_if_any_anchor_signals() -> None:
     outcomes = [
         {"anchor": "a", **_det_fail_control(5), **_clean_treatment(5, [False] * 5)},
-        {"anchor": "b", **_det_fail_control(5), **_clean_treatment(5, [False, True, False, False, False])},
+        {
+            "anchor": "b",
+            **_det_fail_control(5),
+            **_clean_treatment(5, [False, True, False, False, False]),
+        },
     ]
     r = route_b1_decision(outcomes)
     assert r["decision"] == "route_b1_probe_signal_of_life"
@@ -76,7 +87,8 @@ def test_decision_signal_of_life_if_any_anchor_signals() -> None:
 
 def test_decision_futility_when_all_counted_no_uplift() -> None:
     outcomes = [
-        {"anchor": a, **_det_fail_control(5), **_clean_treatment(5, [False] * 5)} for a in ("a", "b", "c", "d")
+        {"anchor": a, **_det_fail_control(5), **_clean_treatment(5, [False] * 5)}
+        for a in ("a", "b", "c", "d")
     ]
     r = route_b1_decision(outcomes)
     assert r["decision"] == "route_b1_probe_futility_null"
@@ -101,7 +113,14 @@ def test_decision_inconclusive_when_nothing_counts() -> None:
 def test_aggregate_cells_round_trip() -> None:
     cells = [
         {"anchor": "a", "arm": "control", "resolved": False, "injection_count": 0},
-        {"anchor": "a", "arm": "treatment", "resolved": True, "injected_once": True, "leak_clean": True, "trigger_hit": True},
+        {
+            "anchor": "a",
+            "arm": "treatment",
+            "resolved": True,
+            "injected_once": True,
+            "leak_clean": True,
+            "trigger_hit": True,
+        },
     ]
     out = aggregate_cells_to_anchor_outcomes(cells)
     assert out[0]["anchor"] == "a"
@@ -114,10 +133,21 @@ def test_cli_decision(tmp_path: Path) -> None:
     lines = []
     for anchor in ("a", "b"):
         for _ in range(5):
-            lines.append({"anchor": anchor, "arm": "control", "resolved": False, "injection_count": 0})
+            lines.append(
+                {"anchor": anchor, "arm": "control", "resolved": False, "injection_count": 0}
+            )
         for i in range(5):
             res = anchor == "b" and i == 0  # one treatment resolve on anchor b
-            lines.append({"anchor": anchor, "arm": "treatment", "resolved": res, "injected_once": True, "leak_clean": True, "trigger_hit": True})
+            lines.append(
+                {
+                    "anchor": anchor,
+                    "arm": "treatment",
+                    "resolved": res,
+                    "injected_once": True,
+                    "leak_clean": True,
+                    "trigger_hit": True,
+                }
+            )
     cells.write_text("\n".join(json.dumps(x) for x in lines) + "\n")
     res = runner.invoke(app, ["route-b1-decision", str(cells), "-o", str(tmp_path / "dec")])
     assert res.exit_code == 0, res.output

@@ -23,7 +23,10 @@ from wutai_clinic.adapters.sweagent_protocol_v1_official_eval import (
     run_sweagent_protocol_v1_official_eval,
 )
 from wutai_clinic.cli import app
-from wutai_clinic.intervention.protocol_v1 import ProtocolV1, protocol_v1_for_no_uplift_classification
+from wutai_clinic.intervention.protocol_v1 import (
+    ProtocolV1,
+    protocol_v1_for_no_uplift_classification,
+)
 from wutai_clinic.io import count_jsonl
 
 runner = CliRunner()

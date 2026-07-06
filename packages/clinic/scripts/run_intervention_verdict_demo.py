@@ -34,8 +34,12 @@ from pathlib import Path
 from typing import Any
 
 SCRIPT_PATH = Path(__file__).resolve()
-REPO_ROOT = SCRIPT_PATH.parent.parent if SCRIPT_PATH.parent.name == "scripts" else SCRIPT_PATH.parent
-DEFAULT_MODELS_ROOT = REPO_ROOT / "models" if (REPO_ROOT / "models").exists() else REPO_ROOT.parent / "models"
+REPO_ROOT = (
+    SCRIPT_PATH.parent.parent if SCRIPT_PATH.parent.name == "scripts" else SCRIPT_PATH.parent
+)
+DEFAULT_MODELS_ROOT = (
+    REPO_ROOT / "models" if (REPO_ROOT / "models").exists() else REPO_ROOT.parent / "models"
+)
 DEFAULT_README = REPO_ROOT / "README.md"
 DEFAULT_MEMO = REPO_ROOT / "MEMO.md"
 DEFAULT_COVER = REPO_ROOT / "COVER_NOTE.md"
@@ -121,81 +125,130 @@ def build_rows(root: Path) -> tuple[list[dict[str, str]], list[dict[str, Any]]]:
     # --- Specificity: deployable behavioral interventions, both killed null ---
     v1, v1m = reports["v1"]
     v1_counts = v1["summary"]["protocol_v1_label_counts"]
-    rows.append({
-        "intervention": "v1 constraint hook (break-loop / require-repro)",
-        "klass": "behavioral, deployable", "trigger_hit": "yes", "leakage": "clean",
-        "outcome": f"{sum(v1_counts.values())} pair, 0 uplift", "verdict": "calibrated null",
-    })
-    prov.append({**v1m, "row": "v1", "decision": v1["decision"], "fields": {"label_counts": v1_counts}})
+    rows.append(
+        {
+            "intervention": "v1 constraint hook (break-loop / require-repro)",
+            "klass": "behavioral, deployable",
+            "trigger_hit": "yes",
+            "leakage": "clean",
+            "outcome": f"{sum(v1_counts.values())} pair, 0 uplift",
+            "verdict": "calibrated null",
+        }
+    )
+    prov.append(
+        {**v1m, "row": "v1", "decision": v1["decision"], "fields": {"label_counts": v1_counts}}
+    )
 
     v2, v2m = reports["v2"]
     s = v2["summary"]
-    rows.append({
-        "intervention": "v2 constraint hook (break-recurrence + reproduce)",
-        "klass": "behavioral, deployable", "trigger_hit": "yes", "leakage": "clean",
-        "outcome": f"{s['strict_fresh_pair_count']} strict-fresh pairs, {s['strict_fresh_uplift_count']} uplift",
-        "verdict": "calibrated null (underpowered)",
-    })
-    prov.append({**v2m, "row": "v2", "decision": v2["decision"], "fields": {
-        "strict_fresh_pair_count": s["strict_fresh_pair_count"],
-        "strict_fresh_uplift_count": s["strict_fresh_uplift_count"],
-        "strict_fresh_source_task_ids": s.get("strict_fresh_source_task_ids"),
-    }})
+    rows.append(
+        {
+            "intervention": "v2 constraint hook (break-recurrence + reproduce)",
+            "klass": "behavioral, deployable",
+            "trigger_hit": "yes",
+            "leakage": "clean",
+            "outcome": f"{s['strict_fresh_pair_count']} strict-fresh pairs, {s['strict_fresh_uplift_count']} uplift",
+            "verdict": "calibrated null (underpowered)",
+        }
+    )
+    prov.append(
+        {
+            **v2m,
+            "row": "v2",
+            "decision": v2["decision"],
+            "fields": {
+                "strict_fresh_pair_count": s["strict_fresh_pair_count"],
+                "strict_fresh_uplift_count": s["strict_fresh_uplift_count"],
+                "strict_fresh_source_task_ids": s.get("strict_fresh_source_task_ids"),
+            },
+        }
+    )
 
     # --- B1: honestly no valid verdict (design dead-end), no artifact to read ---
-    rows.append({
-        "intervention": "B1 deployable-info injection (issue-derived reproduction)",
-        "klass": "informational, deployable", "trigger_hit": "yes (smoke)",
-        "leakage": "redundant w/ control", "outcome": "no valid pair",
-        "verdict": "design dead-end - no verdict",
-    })
-    prov.append({
-        "row": "b1", "source": None, "sha256": None,
-        "decision": "invalidated_redundant_with_control",
-        "note": "no outcome report (design dead-end); design/lineage artifacts below",
-        "lineage_sources": [_lineage(root, rel) for rel in B1_LINEAGE],
-    })
+    rows.append(
+        {
+            "intervention": "B1 deployable-info injection (issue-derived reproduction)",
+            "klass": "informational, deployable",
+            "trigger_hit": "yes (smoke)",
+            "leakage": "redundant w/ control",
+            "outcome": "no valid pair",
+            "verdict": "design dead-end - no verdict",
+        }
+    )
+    prov.append(
+        {
+            "row": "b1",
+            "source": None,
+            "sha256": None,
+            "decision": "invalidated_redundant_with_control",
+            "note": "no outcome report (design dead-end); design/lineage artifacts below",
+            "lineage_sources": [_lineage(root, rel) for rel in B1_LINEAGE],
+        }
+    )
 
     # --- Sensitivity: a positive control proves the harness is not blind ---
     mech, mm = reports["mechanism"]
     m = mech["summary"]
     improved = m["mechanism_counts"].get(
-        "trigger_hit_injection_changed_patch_and_official_outcome_improved", 0)
-    rows.append({
-        "intervention": "oracle / answer-bearing injection (positive control)",
-        "klass": "informational, NON-deployable", "trigger_hit": "yes",
-        "leakage": "fail (by design)",
-        "outcome": f"{m['positive_uplift_case_count']} resolved ({improved} patch+outcome improved)",
-        "verdict": "true positive - sensitivity anchor",
-    })
-    prov.append({**mm, "row": "oracle_positive", "decision": mech["decision"], "fields": {
-        "positive_uplift_case_count": m["positive_uplift_case_count"],
-        "mechanism_counts": m["mechanism_counts"],
-    }})
+        "trigger_hit_injection_changed_patch_and_official_outcome_improved", 0
+    )
+    rows.append(
+        {
+            "intervention": "oracle / answer-bearing injection (positive control)",
+            "klass": "informational, NON-deployable",
+            "trigger_hit": "yes",
+            "leakage": "fail (by design)",
+            "outcome": f"{m['positive_uplift_case_count']} resolved ({improved} patch+outcome improved)",
+            "verdict": "true positive - sensitivity anchor",
+        }
+    )
+    prov.append(
+        {
+            **mm,
+            "row": "oracle_positive",
+            "decision": mech["decision"],
+            "fields": {
+                "positive_uplift_case_count": m["positive_uplift_case_count"],
+                "mechanism_counts": m["mechanism_counts"],
+            },
+        }
+    )
 
     # --- Honest caveat: oracle injection does NOT always move the outcome ---
     excl = v2.get("oracle_probe_rows_excluded", [])
     unmoved = [r for r in excl if r.get("oracle_treatment_resolved") is False]
-    rows.append({
-        "intervention": "oracle-probe sweep (sphinx-8435 / sphinx-8474)",
-        "klass": "informational, NON-deployable", "trigger_hit": "yes",
-        "leakage": "fail (by design)",
-        "outcome": f"{len(unmoved)}/{len(excl)} unmoved",
-        "verdict": "channel bottleneck / capability ceiling",
-    })
-    prov.append({**v2m, "row": "oracle_probe_sweep",
-                 "decision": ";".join(sorted({r.get("decision", "") for r in excl})),
-                 "fields": {"excluded": excl}})
+    rows.append(
+        {
+            "intervention": "oracle-probe sweep (sphinx-8435 / sphinx-8474)",
+            "klass": "informational, NON-deployable",
+            "trigger_hit": "yes",
+            "leakage": "fail (by design)",
+            "outcome": f"{len(unmoved)}/{len(excl)} unmoved",
+            "verdict": "channel bottleneck / capability ceiling",
+        }
+    )
+    prov.append(
+        {
+            **v2m,
+            "row": "oracle_probe_sweep",
+            "decision": ";".join(sorted({r.get("decision", "") for r in excl})),
+            "fields": {"excluded": excl},
+        }
+    )
 
     # --- Calibration: the outcome-measurement noise floor ---
     eps, em = reports["epsilon"]
     e = eps["pooled_estimate"]
-    rows.append({
-        "intervention": "epsilon noise floor (control-arm reruns)",
-        "klass": "calibration", "trigger_hit": "n/a", "leakage": "n/a",
-        "outcome": f"{e['flip_count']} flips / {e['rerun_count']} reruns",
-        "verdict": f"epsilon point {e['point_estimate']:.2f} (95% upper {e['wilson_upper_95']:.2f})",
-    })
+    rows.append(
+        {
+            "intervention": "epsilon noise floor (control-arm reruns)",
+            "klass": "calibration",
+            "trigger_hit": "n/a",
+            "leakage": "n/a",
+            "outcome": f"{e['flip_count']} flips / {e['rerun_count']} reruns",
+            "verdict": f"epsilon point {e['point_estimate']:.2f} (95% upper {e['wilson_upper_95']:.2f})",
+        }
+    )
     prov.append({**em, "row": "epsilon", "decision": eps["decision"], "fields": e})
 
     return rows, prov
@@ -275,7 +328,8 @@ def write_bundle(root: Path, bundle_dir: Path) -> dict[str, Any]:
     bundle_dir.mkdir(parents=True, exist_ok=True)
     (bundle_dir / "verdict_table.md").write_text(to_markdown(rows) + "\n")
     (bundle_dir / "provenance.json").write_text(
-        json.dumps({"rows": rows, "provenance": prov}, indent=2))
+        json.dumps({"rows": rows, "provenance": prov}, indent=2)
+    )
     (bundle_dir / "MANIFEST.json").write_text(json.dumps(manifest, indent=2))
     (bundle_dir / "VERIFY.md").write_text(_VERIFY_TEXT)
     (bundle_dir / "run_intervention_verdict_demo.py").write_text(Path(__file__).read_text())
@@ -292,12 +346,21 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("models_root", nargs="?", default=str(DEFAULT_MODELS_ROOT))
     ap.add_argument("-o", "--output", default=None, help="write provenance JSON")
-    ap.add_argument("--check-readme", action="store_true",
-                    help="verify README's generated block matches; non-zero on drift")
-    ap.add_argument("--check-docs", action="store_true",
-                    help="verify generated blocks in README.md/MEMO.md when present; non-zero on drift")
-    ap.add_argument("--bundle", default=None,
-                    help="write a self-contained, outsider-runnable credential packet to DIR")
+    ap.add_argument(
+        "--check-readme",
+        action="store_true",
+        help="verify README's generated block matches; non-zero on drift",
+    )
+    ap.add_argument(
+        "--check-docs",
+        action="store_true",
+        help="verify generated blocks in README.md/MEMO.md when present; non-zero on drift",
+    )
+    ap.add_argument(
+        "--bundle",
+        default=None,
+        help="write a self-contained, outsider-runnable credential packet to DIR",
+    )
     ap.add_argument("--readme", default=str(DEFAULT_README))
     args = ap.parse_args()
 
@@ -307,9 +370,11 @@ def main() -> int:
         except (MissingArtifact, RuntimeError) as exc:
             print(f"ERROR: {exc}", file=sys.stderr)
             return 2
-        print(f"bundle written to {args.bundle}: {info['rows']} rows, "
-              f"{info['manifest_files']} source files, self-verified "
-              f"(reproduces + SHA chain ok).")
+        print(
+            f"bundle written to {args.bundle}: {info['rows']} rows, "
+            f"{info['manifest_files']} source files, self-verified "
+            f"(reproduces + SHA chain ok)."
+        )
         return 0
 
     try:
@@ -321,7 +386,11 @@ def main() -> int:
     if args.check_readme or args.check_docs:
         expected = render_block(rows).strip()
         targets = (
-            [(name, path) for name, path in [("README.md", DEFAULT_README), ("MEMO.md", DEFAULT_MEMO)] if path.exists()]
+            [
+                (name, path)
+                for name, path in [("README.md", DEFAULT_README), ("MEMO.md", DEFAULT_MEMO)]
+                if path.exists()
+            ]
             if args.check_docs
             else [("README.md", Path(args.readme))]
         )
@@ -335,7 +404,10 @@ def main() -> int:
                 print(f"ERROR: generated-block markers not found in {name}", file=sys.stderr)
                 failed = True
             elif actual.strip() != expected:
-                print(f"ERROR: {name} generated block is stale; re-run and update it.", file=sys.stderr)
+                print(
+                    f"ERROR: {name} generated block is stale; re-run and update it.",
+                    file=sys.stderr,
+                )
                 failed = True
             else:
                 print(f"{name} generated block matches script output.")
@@ -343,14 +415,21 @@ def main() -> int:
 
     print("# Intervention verdicts (specificity + sensitivity)\n")
     print(to_markdown(rows))
-    print("\nNull results prove the harness is not credulous; the oracle-positive "
-          "control proves it is not blind.")
-    print("Caveat: oracle injection moved 1 task but failed 4 probes on 2 others "
-          "(channel bottleneck / capability ceiling) — sensitivity is task-conditional.")
+    print(
+        "\nNull results prove the harness is not credulous; the oracle-positive "
+        "control proves it is not blind."
+    )
+    print(
+        "Caveat: oracle injection moved 1 task but failed 4 probes on 2 others "
+        "(channel bottleneck / capability ceiling) — sensitivity is task-conditional."
+    )
 
     if args.output:
-        Path(args.output).write_text(json.dumps(
-            {"rows": rows, "provenance": prov, "models_root": str(args.models_root)}, indent=2))
+        Path(args.output).write_text(
+            json.dumps(
+                {"rows": rows, "provenance": prov, "models_root": str(args.models_root)}, indent=2
+            )
+        )
         print(f"\nwrote {args.output}")
     return 0
 

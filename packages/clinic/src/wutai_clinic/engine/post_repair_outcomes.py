@@ -75,20 +75,14 @@ def assemble_post_repair(rows: list[dict[str, Any]]) -> dict[str, Any]:
                     "effect_label": _effect_label(control, treatment),
                 }
             )
-        rerun_outcomes = [
-            arms[key] for key in sorted(arms) if key.startswith("epsilon_run_")
-        ]
+        rerun_outcomes = [arms[key] for key in sorted(arms) if key.startswith("epsilon_run_")]
         if rerun_outcomes and control is not None:
             estimate = flip_rate_estimate(
                 [bool(outcome) for outcome in rerun_outcomes],
                 reference_outcome=bool(control),
             )
             epsilon_estimates[instance_id] = estimate
-        probes = {
-            key: value
-            for key, value in arms.items()
-            if key.startswith(("oracle_", "dose_"))
-        }
+        probes = {key: value for key, value in arms.items() if key.startswith(("oracle_", "dose_"))}
         if probes:
             probe_arms[instance_id] = probes
 
@@ -152,9 +146,7 @@ def write_post_repair_outcomes_evidence(root: Path, output_dir: Path) -> dict[st
     gates = {
         "reeval_outcomes_present": len(rows) > 0,
         "reeval_outcomes_complete": all(r.get("resolved") is not None for r in rows),
-        "post_fix_validity_all_valid": bool(
-            validity and not validity.get("invalid_instances")
-        ),
+        "post_fix_validity_all_valid": bool(validity and not validity.get("invalid_instances")),
     }
     if all(gates.values()):
         assembled = assemble_post_repair(rows)
@@ -202,9 +194,7 @@ def write_post_repair_outcomes_evidence(root: Path, output_dir: Path) -> dict[st
         },
     )
     report_path = output_dir / "post_repair_outcomes_report.json"
-    report_path.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    )
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     manifest = generate_manifest(
         phase=POST_REPAIR_PHASE,
         report=report,

@@ -94,7 +94,8 @@ def route_b1_decision(anchor_outcomes: list[dict[str, Any]]) -> dict[str, Any]:
         "decision_token_has_no_uplift_wording": all(
             t not in decision for t in ("uplift", "resolved_claim", "improvement")
         ),
-        "at_least_one_anchor_counted_or_inconclusive": bool(counted) or decision.endswith("inconclusive_recalibrate"),
+        "at_least_one_anchor_counted_or_inconclusive": bool(counted)
+        or decision.endswith("inconclusive_recalibrate"),
     }
     return {
         "phase": "route_b.b1_decision",

@@ -100,9 +100,7 @@ def write_instance_validity_evidence(root: Path, output_dir: Path) -> dict[str, 
         },
     )
     report_path = output_dir / "instance_validity_report.json"
-    report_path.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    )
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     manifest = generate_manifest(
         phase=INSTANCE_VALIDITY_PHASE,
         report=report,

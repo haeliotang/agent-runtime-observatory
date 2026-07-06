@@ -84,7 +84,9 @@ def test_batch3_readiness_without_dry_run_requires_dry_run_first() -> None:
     )
 
     assert report["passed"] is True
-    assert report["decision"] == "batch3_readiness_recalibration_ready_live_feature_dry_run_required"
+    assert (
+        report["decision"] == "batch3_readiness_recalibration_ready_live_feature_dry_run_required"
+    )
     assert report["readiness_summary"]["dry_run_present"] is False
     assert report["continuation_policy"]["allow_prepare_batch3_candidate_review"] is True
     assert report["continuation_policy"]["allow_live_hook_runner_preflight"] is False

@@ -50,17 +50,19 @@ def _make_root(root: Path, *, rows: list[dict] | None = None, all_valid: bool = 
     }
     iv = root / "instance_validity"
     iv.mkdir(parents=True, exist_ok=True)
-    (iv / "instance_validity_report.json").write_text(
-        json.dumps(validity) + "\n", encoding="utf-8"
-    )
+    (iv / "instance_validity_report.json").write_text(json.dumps(validity) + "\n", encoding="utf-8")
 
 
 def test_assemble_pairs_and_labels() -> None:
     assembled = assemble_post_repair(_rows())
     labels = {r["source_task_id"]: r["effect_label"] for r in assembled["pair_rows"]}
     assert labels["sphinx-doc__sphinx-7686"] == "both_unresolved_trigger_hit_pair_no_uplift"
-    assert labels["sphinx-doc__sphinx-8435"] == "control_only_resolved_trigger_hit_negative_candidate"
-    assert labels["sphinx-doc__sphinx-8474"] == "control_only_resolved_trigger_hit_negative_candidate"
+    assert (
+        labels["sphinx-doc__sphinx-8435"] == "control_only_resolved_trigger_hit_negative_candidate"
+    )
+    assert (
+        labels["sphinx-doc__sphinx-8474"] == "control_only_resolved_trigger_hit_negative_candidate"
+    )
     assert assembled["harm_pair_count"] == 2
     assert all(r["lineage"] == REPAIRED_LINEAGE for r in assembled["pair_rows"])
 
@@ -105,7 +107,10 @@ def test_write_evidence_harm_decision(tmp_path: Path) -> None:
     assert report["continuation_policy"]["keep_prescription_frozen"] is True
     # No positive-uplift wording in claim boundary.
     lowered = report["claim_boundary"].lower()
-    assert lowered.count("uplift") == lowered.count("no uplift") + lowered.count("no-uplift") or "uplift" not in lowered
+    assert (
+        lowered.count("uplift") == lowered.count("no uplift") + lowered.count("no-uplift")
+        or "uplift" not in lowered
+    )
 
 
 def test_write_evidence_blocked_when_incomplete(tmp_path: Path) -> None:

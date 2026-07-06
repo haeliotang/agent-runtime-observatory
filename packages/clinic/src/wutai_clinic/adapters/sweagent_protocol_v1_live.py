@@ -154,7 +154,8 @@ def run_sweagent_protocol_v1_live_single(
         "replay_actions_present_if_execute": not spec.execute or replay_ready,
         "docker_ack_if_execute": not spec.execute or policy.allow_docker,
         "external_provider_ack_if_execute": not spec.execute or policy.allow_external_provider,
-        "official_eval_ack_if_required": not spec.require_official_eval or policy.allow_official_eval,
+        "official_eval_ack_if_required": not spec.require_official_eval
+        or policy.allow_official_eval,
         "official_eval_not_claimed": not spec.require_official_eval or policy.allow_official_eval,
         "same_pair_positive_claim_not_made": True,
         "raw_payload_logging_disabled": spec.protocol.guard.raw_payload_logging is False,
@@ -198,7 +199,9 @@ def run_sweagent_protocol_v1_live_single(
             "run_started_if_execute": not spec.execute or run_single_started,
             "hook_attached_if_execute": not spec.execute or attachment is not None,
             "constraint_hook_attached_if_treatment_execute": (
-                not spec.execute or spec.arm_type == "control" or bool(attachment and attachment.hook)
+                not spec.execute
+                or spec.arm_type == "control"
+                or bool(attachment and attachment.hook)
             ),
             "hook_events_present_if_treatment_execute": (
                 not spec.execute or spec.arm_type == "control" or bool(hook_events)
@@ -222,10 +225,7 @@ def run_sweagent_protocol_v1_live_single(
     else:
         decision = "protocol_v1_live_single_run_completed"
     arm_complete = (
-        spec.execute
-        and run_single_started
-        and run_error is None
-        and constraint_block_event is None
+        spec.execute and run_single_started and run_error is None and constraint_block_event is None
     )
     if not spec.execute:
         recommended_next_step = "execute_control_and_treatment_arms_after_explicit_authorization"
@@ -246,9 +246,7 @@ def run_sweagent_protocol_v1_live_single(
     _write_json(protocol_path, spec.protocol.to_dict())
     _write_json(replay_path, spec.replay_actions)
     model_events = attachment.hybrid_model.event_rows() if attachment is not None else []
-    events = [
-        {"event_type": "model_query", **event} for event in model_events
-    ] + [
+    events = [{"event_type": "model_query", **event} for event in model_events] + [
         {"event_type": "protocol_v1_constraint", **event} for event in hook_events
     ]
     write_jsonl(events_path, events)

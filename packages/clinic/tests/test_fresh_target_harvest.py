@@ -330,10 +330,14 @@ def test_plan_missing_evidence_index_raises(tmp_path):
 def test_execute_no_acks_raises(tmp_path):
     plan_path = tmp_path / "plan" / "fresh_target_harvest_plan.json"
     plan_path.parent.mkdir()
-    plan_path.write_text(json.dumps({
-        "decision": "fresh_target_harvest_plan_ready_live_execution_not_authorized",
-        "summary": {"selected_instances": []},
-    }))
+    plan_path.write_text(
+        json.dumps(
+            {
+                "decision": "fresh_target_harvest_plan_ready_live_execution_not_authorized",
+                "summary": {"selected_instances": []},
+            }
+        )
+    )
     with pytest.raises(RuntimeError, match="requires --ack-docker and --ack-external-provider"):
         run_fresh_target_harvest(
             plan_path=plan_path,
@@ -347,10 +351,14 @@ def test_execute_no_acks_raises(tmp_path):
 def test_execute_only_docker_ack_raises(tmp_path):
     plan_path = tmp_path / "plan" / "fresh_target_harvest_plan.json"
     plan_path.parent.mkdir()
-    plan_path.write_text(json.dumps({
-        "decision": "fresh_target_harvest_plan_ready_live_execution_not_authorized",
-        "summary": {"selected_instances": []},
-    }))
+    plan_path.write_text(
+        json.dumps(
+            {
+                "decision": "fresh_target_harvest_plan_ready_live_execution_not_authorized",
+                "summary": {"selected_instances": []},
+            }
+        )
+    )
     with pytest.raises(RuntimeError):
         run_fresh_target_harvest(
             plan_path=plan_path,
@@ -364,10 +372,14 @@ def test_execute_only_docker_ack_raises(tmp_path):
 def test_execute_only_provider_ack_raises(tmp_path):
     plan_path = tmp_path / "plan" / "fresh_target_harvest_plan.json"
     plan_path.parent.mkdir()
-    plan_path.write_text(json.dumps({
-        "decision": "fresh_target_harvest_plan_ready_live_execution_not_authorized",
-        "summary": {"selected_instances": []},
-    }))
+    plan_path.write_text(
+        json.dumps(
+            {
+                "decision": "fresh_target_harvest_plan_ready_live_execution_not_authorized",
+                "summary": {"selected_instances": []},
+            }
+        )
+    )
     with pytest.raises(RuntimeError):
         run_fresh_target_harvest(
             plan_path=plan_path,
@@ -396,15 +408,20 @@ def _make_plan_file(tmp_path: Path, instance_ids: list[str]) -> Path:
         }
         for iid in instance_ids
     ]
-    plan_path.write_text(json.dumps({
-        "decision": "fresh_target_harvest_plan_ready_live_execution_not_authorized",
-        "summary": {"selected_instances": selected},
-    }))
+    plan_path.write_text(
+        json.dumps(
+            {
+                "decision": "fresh_target_harvest_plan_ready_live_execution_not_authorized",
+                "summary": {"selected_instances": selected},
+            }
+        )
+    )
     return plan_path
 
 
 def _fake_runner(results_map: dict[str, str]):
     """Return a runner that maps instance_id -> status."""
+
     def runner(instance_id: str, output_dir: Path) -> dict:
         return {
             "instance_id": instance_id,
@@ -412,6 +429,7 @@ def _fake_runner(results_map: dict[str, str]):
             "patch_path": None,
             "archive_dir": str(output_dir),
         }
+
     return runner
 
 
@@ -452,14 +470,14 @@ def test_execute_resolved_becomes_sentinel(tmp_path):
 
 
 def test_execute_mixed_results(tmp_path):
-    plan_path = _make_plan_file(
-        tmp_path, ["repo__task-001", "repo__task-002", "repo__task-003"]
+    plan_path = _make_plan_file(tmp_path, ["repo__task-001", "repo__task-002", "repo__task-003"])
+    runner = _fake_runner(
+        {
+            "repo__task-001": "unresolved",
+            "repo__task-002": "resolved",
+            "repo__task-003": "error",
+        }
     )
-    runner = _fake_runner({
-        "repo__task-001": "unresolved",
-        "repo__task-002": "resolved",
-        "repo__task-003": "error",
-    })
     result = run_fresh_target_harvest(
         plan_path=plan_path,
         runner=runner,
@@ -529,29 +547,32 @@ def test_execute_candidates_downstream_compat(tmp_path):
 
     # Minimal valid trajectory: environment, trajectory list, replay_config
     import json as _json
+
     traj_payload = {
         "environment": task_id,
         "trajectory": [
             {"action": "echo hello", "thought": "checking"},
         ],
-        "replay_config": _json.dumps({
-            "output_dir": str(tmp_path / "native_out"),
-            "env_var_path": None,
-            "env": {"deployment": {"python_standalone_dir": ""}},
-            "agent": {
-                "model": {
-                    "name": "openai/gpt-5.5",
-                    "api_key": None,
-                    "api_base": None,
-                    "api_version": None,
-                    "temperature": 0.0,
-                    "top_p": None,
-                    "per_instance_call_limit": 0,
-                    "per_instance_cost_limit": 0.0,
-                    "total_cost_limit": 0.0,
-                }
-            },
-        }),
+        "replay_config": _json.dumps(
+            {
+                "output_dir": str(tmp_path / "native_out"),
+                "env_var_path": None,
+                "env": {"deployment": {"python_standalone_dir": ""}},
+                "agent": {
+                    "model": {
+                        "name": "openai/gpt-5.5",
+                        "api_key": None,
+                        "api_base": None,
+                        "api_version": None,
+                        "temperature": 0.0,
+                        "top_p": None,
+                        "per_instance_call_limit": 0,
+                        "per_instance_cost_limit": 0.0,
+                        "total_cost_limit": 0.0,
+                    }
+                },
+            }
+        ),
     }
     traj_path.write_text(_json.dumps(traj_payload))
 
@@ -632,13 +653,20 @@ def test_cli_plan_mode_end_to_end(tmp_path):
     res = runner.invoke(
         cli_app,
         [
-            "--evidence-index", str(ev),
-            "--dataset-instances", str(ds),
-            "--lite300-report", str(l3),
-            "--max-instances", "30",
-            "-o", str(out),
+            "--evidence-index",
+            str(ev),
+            "--dataset-instances",
+            str(ds),
+            "--lite300-report",
+            str(l3),
+            "--max-instances",
+            "30",
+            "-o",
+            str(out),
         ],
     )
     assert res.exit_code == 0, res.output
     output_data = json.loads(res.output)
-    assert output_data["decision"] == "fresh_target_harvest_plan_ready_live_execution_not_authorized"
+    assert (
+        output_data["decision"] == "fresh_target_harvest_plan_ready_live_execution_not_authorized"
+    )

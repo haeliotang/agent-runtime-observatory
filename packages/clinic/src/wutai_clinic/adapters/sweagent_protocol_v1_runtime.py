@@ -122,7 +122,8 @@ def activate_sweagent_protocol_v1_runtime_config(
         "arm_type_valid": spec.arm_type in {"control", "treatment"},
         "arm_scoped_native_output_dir": _arm_scoped(native_output_dir, spec.arm_type),
         "per_instance_call_limit_positive": spec.per_instance_call_limit > 0,
-        "cost_limits_non_negative": spec.per_instance_cost_limit >= 0 and spec.total_cost_limit >= 0,
+        "cost_limits_non_negative": spec.per_instance_cost_limit >= 0
+        and spec.total_cost_limit >= 0,
         "provider_secret_not_written": output_api_key_value in {None, ""},
         "docker_not_started": True,
         "external_provider_not_called": True,

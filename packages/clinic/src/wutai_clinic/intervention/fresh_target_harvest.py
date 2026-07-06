@@ -266,9 +266,7 @@ def write_fresh_target_harvest_plan(
             excluded_by_lite300.append(iid)
 
     # Candidates = dataset ids NOT in either exclusion set, deterministic sort
-    candidates = sorted(
-        iid for iid in all_dataset_ids if iid not in combined_exclusion
-    )
+    candidates = sorted(iid for iid in all_dataset_ids if iid not in combined_exclusion)
 
     # Apply max_instances cap
     selected_ids = candidates[:max_instances]
@@ -351,9 +349,7 @@ def run_fresh_target_harvest(
         {instance_id, status, patch_path, archive_dir}
     """
     if not ack_docker or not ack_external_provider:
-        raise RuntimeError(
-            "execute mode requires --ack-docker and --ack-external-provider"
-        )
+        raise RuntimeError("execute mode requires --ack-docker and --ack-external-provider")
 
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     selected = plan.get("summary", {}).get("selected_instances", [])

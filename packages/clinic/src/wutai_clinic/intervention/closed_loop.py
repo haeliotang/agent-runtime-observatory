@@ -52,17 +52,14 @@ def closed_loop_gates(
     }
     if cumulative_report is not None:
         gates["cumulative_diagnosis_passed"] = cumulative_report.get("passed") is True
-        gates["cumulative_pair_count_matches"] = (
-            cumulative_report.get("cumulative_summary", {}).get("selected_pair_count")
-            == len(pair_summary)
-        )
+        gates["cumulative_pair_count_matches"] = cumulative_report.get(
+            "cumulative_summary", {}
+        ).get("selected_pair_count") == len(pair_summary)
         gates["predictive_claim_not_made"] = (
-            cumulative_report.get("claim_boundary", {}).get("efe_str_predictive_claimed")
-            is False
+            cumulative_report.get("claim_boundary", {}).get("efe_str_predictive_claimed") is False
         )
         gates["paired_uplift_claim_not_made"] = (
-            cumulative_report.get("claim_boundary", {}).get("paired_uplift_claimed")
-            is False
+            cumulative_report.get("claim_boundary", {}).get("paired_uplift_claimed") is False
         )
     if trigger_policy_review is not None:
         continuation_policy = trigger_policy_review.get("continuation_policy", {})
@@ -126,9 +123,7 @@ def closed_loop_report(
     }
     if cumulative_report is not None:
         extras["cumulative_summary"] = cumulative_report.get("cumulative_summary", {})
-        extras["cumulative_continuation_policy"] = cumulative_report.get(
-            "continuation_policy", {}
-        )
+        extras["cumulative_continuation_policy"] = cumulative_report.get("continuation_policy", {})
     if trigger_policy_review is not None:
         extras["trigger_policy_review"] = {
             "decision": trigger_policy_review.get("decision"),

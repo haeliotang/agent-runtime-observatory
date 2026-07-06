@@ -11,6 +11,7 @@ authorization flags in any code path.  Those flags only appear as literal
 strings inside operator-command templates that are returned for human copy-paste
 and never executed by this module.
 """
+
 from __future__ import annotations
 
 import json
@@ -185,6 +186,7 @@ def advance_batch(
                     SWEAgentProtocolV2LivePairSpec,
                     run_sweagent_protocol_v2_live_pair,
                 )
+
                 # Locate arm dirs and patch archives from the live-single reports
                 control_dir, treatment_dir = _find_arm_dirs(evidence_root, sid)
                 control_patch = control_dir / "sweagent_protocol_v2_live_single.patch"
@@ -417,7 +419,10 @@ def _find_arm_dirs(evidence_root: Path, source_task_id: str) -> tuple[Path, Path
 
     # Try to read from live-pair report if it exists
     pair_rpt_path = (
-        evidence_root / "protocol_v2_live_pair" / source_task_id / "protocol_v2_live_pair_report.json"
+        evidence_root
+        / "protocol_v2_live_pair"
+        / source_task_id
+        / "protocol_v2_live_pair_report.json"
     )
     if pair_rpt_path.is_file():
         try:

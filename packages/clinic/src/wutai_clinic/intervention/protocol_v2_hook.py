@@ -120,9 +120,7 @@ class ProtocolV2ConstraintHook:
     def before_action(self, action: str) -> dict[str, Any]:
         family = self._action_family(action)
         in_replay_prefix = self.state.action_index < self.replay_prefix_action_count
-        violated, reason = (
-            (False, None) if in_replay_prefix else self._block_reason(action, family)
-        )
+        violated, reason = (False, None) if in_replay_prefix else self._block_reason(action, family)
         # Observe-only mode records the violation without enforcing it.
         blocked = violated and not self.observe_only
         if in_replay_prefix:

@@ -172,12 +172,14 @@ def _normalize_v0_reference_pair(scorecard_path: Path) -> dict[str, Any]:
 
 def _find_fresh_list_path(root: Path) -> Path:
     """Locate the v2 fresh candidate gate list under root."""
-    candidates = sorted(
-        root.rglob("protocol_v2_fresh_candidate_set_candidates.jsonl")
-    )
+    candidates = sorted(root.rglob("protocol_v2_fresh_candidate_set_candidates.jsonl"))
     if candidates:
         return candidates[0]
-    return root / "protocol_v2_fresh_candidate_gate" / "protocol_v2_fresh_candidate_set_candidates.jsonl"
+    return (
+        root
+        / "protocol_v2_fresh_candidate_gate"
+        / "protocol_v2_fresh_candidate_set_candidates.jsonl"
+    )
 
 
 def load_protocol_v2_outcome_rows(
@@ -349,7 +351,9 @@ def protocol_v2_batch_outcomes_continuation_policy(
     fresh_count = int(summary["strict_fresh_pair_count"])
     return {
         # ALLOWED
-        "allow_continue_remaining_fresh_targets": structural_passed and not target_met and harm == 0,
+        "allow_continue_remaining_fresh_targets": structural_passed
+        and not target_met
+        and harm == 0,
         "allow_power_analysis_consuming_this_report": structural_passed and fresh_count > 0,
         # BLOCKED
         "allow_stability_claim": False,
@@ -464,8 +468,7 @@ def write_protocol_v2_batch_outcomes_evidence(
     _write_json(report_path, report)
 
     artifacts = [
-        _artifact(p)
-        for p in [pairs_path, ref_v2_path, ref_v1_path, ref_v0_path, report_path]
+        _artifact(p) for p in [pairs_path, ref_v2_path, ref_v1_path, ref_v0_path, report_path]
     ]
     artifacts.extend(_artifact(Path(r["scorecard_path"])) for r in all_v2_rows)
     artifacts.extend(_artifact(Path(r["scorecard_path"])) for r in v1_reference_rows)

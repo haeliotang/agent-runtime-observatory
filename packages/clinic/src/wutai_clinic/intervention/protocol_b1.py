@@ -135,10 +135,14 @@ class ProtocolB1Trigger:
         sources = tuple(str(item) for item in data.get("evidence_sources") or [])
         allowed_sources = {"live_feature", "prefix_observation"}
         if not sources or any(source not in allowed_sources for source in sources):
-            raise ValueError("Protocol B1 trigger evidence must come from live features/prefix observations")
+            raise ValueError(
+                "Protocol B1 trigger evidence must come from live features/prefix observations"
+            )
         leaks = find_oracle_tokens({"predicates": predicates, "sources": sources})
         if leaks:
-            raise ValueError(f"Protocol B1 forbids oracle/answer tokens in trigger: {', '.join(leaks)}")
+            raise ValueError(
+                f"Protocol B1 forbids oracle/answer tokens in trigger: {', '.join(leaks)}"
+            )
         return cls(type="live_feature_conjunction", predicates=predicates, evidence_sources=sources)
 
 
@@ -177,7 +181,9 @@ class ProtocolB1Action:
             {"payload_fields": fields, "provenance": provenance, "prompt": data.get("prompt_style")}
         )
         if leaks:
-            raise ValueError(f"Protocol B1 forbids oracle/answer tokens in action: {', '.join(leaks)}")
+            raise ValueError(
+                f"Protocol B1 forbids oracle/answer tokens in action: {', '.join(leaks)}"
+            )
         prompt_style = str(data.get("prompt_style") or "observational_non_oracular")
         if prompt_style != "observational_non_oracular":
             raise ValueError("Protocol B1 prompt_style must be observational_non_oracular")
@@ -206,7 +212,9 @@ class ProtocolB1Guard:
         if int(data.get("max_injections_per_pair") or 1) != 1:
             raise ValueError("Protocol B1 only supports max_injections_per_pair=1")
         if data.get("replay_free", True) is not True:
-            raise ValueError("Protocol B1 requires guard.replay_free=true (task16 amendment A lineage)")
+            raise ValueError(
+                "Protocol B1 requires guard.replay_free=true (task16 amendment A lineage)"
+            )
         if data.get("raw_payload_logging", False) is not False:
             raise ValueError("Protocol B1 requires guard.raw_payload_logging=false")
         if data.get("oracle_capsule_allowed", False) is not False:
@@ -216,11 +224,19 @@ class ProtocolB1Guard:
         if data.get("same_pair_positive_claim_allowed", False) is not False:
             raise ValueError("Protocol B1 blocks same-pair positive attribution claims")
         if data.get("uplift_claim_allowed", False) is not False:
-            raise ValueError("Protocol B1 is go/no-go only; uplift claims need the powered batch (B6)")
-        forbidden = tuple(str(item) for item in data.get("forbidden_payload_categories") or sorted(REQUIRED_FORBIDDEN_CATEGORIES))
+            raise ValueError(
+                "Protocol B1 is go/no-go only; uplift claims need the powered batch (B6)"
+            )
+        forbidden = tuple(
+            str(item)
+            for item in data.get("forbidden_payload_categories")
+            or sorted(REQUIRED_FORBIDDEN_CATEGORIES)
+        )
         missing = sorted(REQUIRED_FORBIDDEN_CATEGORIES - set(forbidden))
         if missing:
-            raise ValueError(f"Protocol B1 guard must forbid leakage categories: {', '.join(missing)}")
+            raise ValueError(
+                f"Protocol B1 guard must forbid leakage categories: {', '.join(missing)}"
+            )
         return cls(forbidden_payload_categories=tuple(sorted(set(forbidden))))
 
 
@@ -232,7 +248,9 @@ class ProtocolB1Claim:
     def from_dict(cls, data: dict[str, Any]) -> "ProtocolB1Claim":
         allowed = str(data.get("allowed") or PROTOCOL_B1_CLAIM_BOUNDARY)
         if allowed != PROTOCOL_B1_CLAIM_BOUNDARY:
-            raise ValueError(f"Protocol B1 only supports claim.allowed={PROTOCOL_B1_CLAIM_BOUNDARY}")
+            raise ValueError(
+                f"Protocol B1 only supports claim.allowed={PROTOCOL_B1_CLAIM_BOUNDARY}"
+            )
         return cls(allowed=allowed)
 
 

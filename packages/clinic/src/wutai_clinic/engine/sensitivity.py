@@ -176,9 +176,7 @@ def write_instrument_sensitivity_evidence(
         },
     )
     report_path = output_dir / "instrument_sensitivity_outcome_report.json"
-    report_path.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    )
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     manifest = generate_manifest(
         phase=SENSITIVITY_PHASE,
         report=report,

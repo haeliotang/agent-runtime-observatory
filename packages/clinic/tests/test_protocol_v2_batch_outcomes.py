@@ -249,7 +249,9 @@ def test_one_uplift_pair_changes_label_counts_and_decision(tmp_path: Path) -> No
     assert summary["harm_pair_count"] == 0
     assert summary["strict_fresh_uplift_count"] == 1
     # decision: underpowered but NOT pure no-uplift
-    assert result["report"]["decision"] == "protocol_v2_batch_outcomes_underpowered_continue_sampling"
+    assert (
+        result["report"]["decision"] == "protocol_v2_batch_outcomes_underpowered_continue_sampling"
+    )
 
 
 def test_v1_v0_context_switches(tmp_path: Path) -> None:
@@ -381,4 +383,6 @@ def test_no_layer_mixing_in_counts(tmp_path: Path) -> None:
     assert summary["uplift_pair_count"] == 0
     assert summary["v0_reference_pair_count"] == 1
     # v0 label shows uplift in its own counter
-    assert "intervention_only_resolved_trigger_hit_candidate" in summary["v0_reference_label_counts"]
+    assert (
+        "intervention_only_resolved_trigger_hit_candidate" in summary["v0_reference_label_counts"]
+    )

@@ -74,11 +74,13 @@ def _make_evidence_root(root: Path) -> None:
         },
     ]
     pairs_path = root / "protocol_v2_mechanistic_endpoints" / "mechanistic_endpoints_pairs.jsonl"
-    pairs_path.write_text(
-        "".join(json.dumps(row) + "\n" for row in mech_rows), encoding="utf-8"
-    )
+    pairs_path.write_text("".join(json.dumps(row) + "\n" for row in mech_rows), encoding="utf-8")
     _write_json(
-        root / "protocol_v2_oracle_probe" / "sphinx-doc__sphinx-8474" / "outcome" / "oracle_probe_outcome_report.json",
+        root
+        / "protocol_v2_oracle_probe"
+        / "sphinx-doc__sphinx-8474"
+        / "outcome"
+        / "oracle_probe_outcome_report.json",
         {
             "source_task_id": "sphinx-doc__sphinx-8474",
             "decision": "oracle_probe_outcome_unmoved_channel_bottleneck_implicated",
@@ -86,7 +88,12 @@ def _make_evidence_root(root: Path) -> None:
         },
     )
     _write_json(
-        root / "protocol_v2_oracle_probe" / "sphinx-doc__sphinx-8474" / "replay_free" / "outcome" / "oracle_probe_outcome_report.json",
+        root
+        / "protocol_v2_oracle_probe"
+        / "sphinx-doc__sphinx-8474"
+        / "replay_free"
+        / "outcome"
+        / "oracle_probe_outcome_report.json",
         {
             "source_task_id": "sphinx-doc__sphinx-8474",
             "decision": "oracle_probe_replay_free_unmoved_channel_capacity_implicated",
@@ -100,7 +107,12 @@ def _make_evidence_root(root: Path) -> None:
         },
     )
     _write_json(
-        root / "protocol_v2_oracle_probe" / "sphinx-doc__sphinx-8474" / "dose_verbatim" / "outcome" / "oracle_probe_outcome_report.json",
+        root
+        / "protocol_v2_oracle_probe"
+        / "sphinx-doc__sphinx-8474"
+        / "dose_verbatim"
+        / "outcome"
+        / "oracle_probe_outcome_report.json",
         {
             "source_task_id": "sphinx-doc__sphinx-8474",
             "decision": "oracle_probe_replay_free_unmoved_capability_ceiling_implicated",
@@ -201,8 +213,7 @@ def test_write_synthesis_all_valid_keeps_original_decision(tmp_path: Path) -> No
     )
     result = write_wave3_synthesis_evidence(root, tmp_path / "out")
     assert (
-        result["report"]["decision"]
-        == "wave3_synthesis_bottleneck_localized_last_mile_semantics"
+        result["report"]["decision"] == "wave3_synthesis_bottleneck_localized_last_mile_semantics"
     )
 
 

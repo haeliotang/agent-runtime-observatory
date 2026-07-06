@@ -53,18 +53,24 @@ def test_eligibility_false_for_prose_only_and_empty() -> None:
 
 # --- scientific core: payload + M2b leak scan ----------------------------------
 def test_build_payload_is_issue_text_only() -> None:
-    p = build_b1_payload(instance_id="x", problem_statement=ISSUE_WITH_REPRO, repro_traceback="ValueError: empty")
+    p = build_b1_payload(
+        instance_id="x", problem_statement=ISSUE_WITH_REPRO, repro_traceback="ValueError: empty"
+    )
     assert p["payload_provenance"] == "issue_text_only"
     assert "foo" in p["issue_reproduction_steps"]
 
 
 def test_leak_scan_clean_payload() -> None:
-    p = build_b1_payload(instance_id="x", problem_statement=ISSUE_WITH_REPRO, repro_traceback="ValueError: empty")
+    p = build_b1_payload(
+        instance_id="x", problem_statement=ISSUE_WITH_REPRO, repro_traceback="ValueError: empty"
+    )
     assert b1_payload_leak_scan(p, fail_to_pass=["tests/test_foo.py::test_empty"]) == []
 
 
 def test_leak_scan_catches_fail_to_pass_node_id() -> None:
-    p = build_b1_payload(instance_id="x", problem_statement="see tests/test_foo.py::test_empty", repro_traceback=None)
+    p = build_b1_payload(
+        instance_id="x", problem_statement="see tests/test_foo.py::test_empty", repro_traceback=None
+    )
     findings = b1_payload_leak_scan(p, fail_to_pass=["tests/test_foo.py::test_empty"])
     assert any("fail_to_pass_node_in_payload" in f for f in findings)
 
@@ -89,14 +95,24 @@ def test_leak_scan_ignores_diff_context_but_catches_added_fix_line() -> None:
         "-    old_buggy_line_that_is_long_enough_xx\n"
         "+    fixed_line_the_actual_solution_here\n"
     )
-    ctx = {"payload_provenance": "issue_text_only", "issue_reproduction_steps": "if ra_dec_order and sky == 'input':", "issue_derived_repro_traceback": None}
+    ctx = {
+        "payload_provenance": "issue_text_only",
+        "issue_reproduction_steps": "if ra_dec_order and sky == 'input':",
+        "issue_derived_repro_traceback": None,
+    }
     assert b1_payload_leak_scan(ctx, gold_patch=gold_diff) == []  # context overlap is fine
-    leak = {"payload_provenance": "issue_text_only", "issue_reproduction_steps": "fixed_line_the_actual_solution_here", "issue_derived_repro_traceback": None}
+    leak = {
+        "payload_provenance": "issue_text_only",
+        "issue_reproduction_steps": "fixed_line_the_actual_solution_here",
+        "issue_derived_repro_traceback": None,
+    }
     assert "gold_patch_line_in_payload" in b1_payload_leak_scan(leak, gold_patch=gold_diff)
 
 
 def test_leak_scan_catches_test_patch_and_gold_lines() -> None:
-    test_patch = "def test_empty():\n    assert foo('') is None  # the hidden official assertion line"
+    test_patch = (
+        "def test_empty():\n    assert foo('') is None  # the hidden official assertion line"
+    )
     p = {
         "payload_provenance": "issue_text_only",
         "issue_reproduction_steps": "assert foo('') is None  # the hidden official assertion line",
@@ -168,8 +184,12 @@ def _spec(tmp_path: Path, arm: str, payload=None, leak=B1LeakRefs()):
 
 
 def test_adapter_treatment_plan_clean(tmp_path: Path) -> None:
-    payload = build_b1_payload(instance_id="pkg__pkg-1", problem_statement=ISSUE_WITH_REPRO, repro_traceback="t")
-    res = run_sweagent_b1_live_single(spec=_spec(tmp_path, "treatment", payload), policy=RuntimePermissionPolicy())
+    payload = build_b1_payload(
+        instance_id="pkg__pkg-1", problem_statement=ISSUE_WITH_REPRO, repro_traceback="t"
+    )
+    res = run_sweagent_b1_live_single(
+        spec=_spec(tmp_path, "treatment", payload), policy=RuntimePermissionPolicy()
+    )
     r = res["report"]
     assert r["decision"] == "route_b1_live_arm_planned_no_run"
     assert r["passed"] is True
@@ -184,7 +204,9 @@ def test_adapter_treatment_leak_is_blocked_even_in_plan(tmp_path: Path) -> None:
         "issue_derived_repro_traceback": None,
     }
     leak = B1LeakRefs(fail_to_pass=["tests/test_foo.py::test_empty"])
-    res = run_sweagent_b1_live_single(spec=_spec(tmp_path, "treatment", payload, leak), policy=RuntimePermissionPolicy())
+    res = run_sweagent_b1_live_single(
+        spec=_spec(tmp_path, "treatment", payload, leak), policy=RuntimePermissionPolicy()
+    )
     r = res["report"]
     assert r["decision"] == "route_b1_live_arm_blocked_payload_leak"
     assert r["passed"] is False
@@ -192,7 +214,9 @@ def test_adapter_treatment_leak_is_blocked_even_in_plan(tmp_path: Path) -> None:
 
 
 def test_adapter_control_plan_needs_no_payload(tmp_path: Path) -> None:
-    res = run_sweagent_b1_live_single(spec=_spec(tmp_path, "control"), policy=RuntimePermissionPolicy())
+    res = run_sweagent_b1_live_single(
+        spec=_spec(tmp_path, "control"), policy=RuntimePermissionPolicy()
+    )
     r = res["report"]
     assert r["decision"] == "route_b1_live_arm_planned_no_run"
     assert r["passed"] is True
@@ -226,7 +250,9 @@ def test_capture_issue_repro_with_fake_executor() -> None:
 def test_capture_then_m2b_rescan_catches_official_test_in_traceback() -> None:
     # The issue steps are clean, but the live repro output happens to surface a
     # FAIL_TO_PASS node id -> the post-capture re-scan must catch it.
-    payload = build_b1_payload(instance_id="x", problem_statement=ISSUE_WITH_REPRO, repro_traceback=None)
+    payload = build_b1_payload(
+        instance_id="x", problem_statement=ISSUE_WITH_REPRO, repro_traceback=None
+    )
     leaky_tb = "Traceback ...\n  at tests/test_foo.py::test_empty"
     payload = attach_captured_traceback(payload, leaky_tb)
     findings = b1_payload_leak_scan(payload, fail_to_pass=["tests/test_foo.py::test_empty"])
@@ -275,7 +301,13 @@ class _NativeRunSingle:
     """Mimics real SWE-agent RunSingle: run() returns None and the patch/exit_status
     are saved to output_dir/<pid>/ (the path _read_native_outcome reads)."""
 
-    def __init__(self, output_dir, pid="pkg__pkg-1", exit_status="submitted", patch="diff --git a/n b/n\n+native"):
+    def __init__(
+        self,
+        output_dir,
+        pid="pkg__pkg-1",
+        exit_status="submitted",
+        patch="diff --git a/n b/n\n+native",
+    ):
         self.agent = _FakeAgent()
         self.output_dir = Path(output_dir)
         self.problem_statement = _FakeProblem(pid)
@@ -288,15 +320,27 @@ class _NativeRunSingle:
         d = self.output_dir / self.problem_statement.id
         d.mkdir(parents=True, exist_ok=True)
         (d / f"{self.problem_statement.id}.pred").write_text(
-            json.dumps({"instance_id": self.problem_statement.id, "model_name_or_path": "x", "model_patch": self._patch})
+            json.dumps(
+                {
+                    "instance_id": self.problem_statement.id,
+                    "model_name_or_path": "x",
+                    "model_patch": self._patch,
+                }
+            )
         )
-        (d / f"{self.problem_statement.id}.traj").write_text(json.dumps({"info": {"exit_status": self._exit}}))
+        (d / f"{self.problem_statement.id}.traj").write_text(
+            json.dumps({"info": {"exit_status": self._exit}})
+        )
         return None  # RunSingle.run() returns None — patch is on disk
 
 
 def test_adapter_reads_patch_from_native_output_when_run_returns_none(tmp_path) -> None:
-    payload = build_b1_payload(instance_id="pkg__pkg-1", problem_statement=ISSUE_WITH_REPRO, repro_traceback=None)
-    rs = _NativeRunSingle(tmp_path / "native", exit_status="submitted", patch="diff --git a/n b/n\n+native")
+    payload = build_b1_payload(
+        instance_id="pkg__pkg-1", problem_statement=ISSUE_WITH_REPRO, repro_traceback=None
+    )
+    rs = _NativeRunSingle(
+        tmp_path / "native", exit_status="submitted", patch="diff --git a/n b/n\n+native"
+    )
     res = run_sweagent_b1_live_single(
         spec=_exec_spec(tmp_path, payload, executor=lambda s: "tb"),
         policy=RuntimePermissionPolicy(allow_docker=True, allow_external_provider=True),
@@ -310,7 +354,9 @@ def test_adapter_reads_patch_from_native_output_when_run_returns_none(tmp_path) 
 
 
 def test_adapter_native_exit_error_flagged(tmp_path) -> None:
-    payload = build_b1_payload(instance_id="pkg__pkg-1", problem_statement=ISSUE_WITH_REPRO, repro_traceback=None)
+    payload = build_b1_payload(
+        instance_id="pkg__pkg-1", problem_statement=ISSUE_WITH_REPRO, repro_traceback=None
+    )
     rs = _NativeRunSingle(tmp_path / "native", exit_status="exit_error", patch="")
     res = run_sweagent_b1_live_single(
         spec=_exec_spec(tmp_path, payload, executor=lambda s: "tb"),
@@ -338,8 +384,14 @@ def _exec_spec(tmp_path, payload, leak=B1LeakRefs(), executor=None):
 
 
 def test_adapter_execute_captures_and_injects_once(tmp_path) -> None:
-    payload = build_b1_payload(instance_id="pkg__pkg-1", problem_statement=ISSUE_WITH_REPRO, repro_traceback=None)
-    spec = _exec_spec(tmp_path, payload, executor=lambda s: "Traceback (most recent call last):\nValueError: empty")
+    payload = build_b1_payload(
+        instance_id="pkg__pkg-1", problem_statement=ISSUE_WITH_REPRO, repro_traceback=None
+    )
+    spec = _exec_spec(
+        tmp_path,
+        payload,
+        executor=lambda s: "Traceback (most recent call last):\nValueError: empty",
+    )
     res = run_sweagent_b1_live_single(
         spec=spec,
         policy=RuntimePermissionPolicy(allow_docker=True, allow_external_provider=True),
@@ -360,7 +412,9 @@ def test_adapter_execute_captures_and_injects_once(tmp_path) -> None:
 def test_adapter_execute_flags_exit_error_as_run_failed(tmp_path) -> None:
     # SWE-agent exit_status=exit_error (e.g. provider 'Insufficient Balance') must
     # NOT be reported as run_completed — it would contaminate the verdict.
-    payload = build_b1_payload(instance_id="pkg__pkg-1", problem_statement=ISSUE_WITH_REPRO, repro_traceback=None)
+    payload = build_b1_payload(
+        instance_id="pkg__pkg-1", problem_statement=ISSUE_WITH_REPRO, repro_traceback=None
+    )
     res = run_sweagent_b1_live_single(
         spec=_exec_spec(tmp_path, payload, executor=lambda s: "Traceback...\nValueError: x"),
         policy=RuntimePermissionPolicy(allow_docker=True, allow_external_provider=True),
@@ -376,9 +430,16 @@ def test_adapter_execute_voids_on_captured_leak(tmp_path) -> None:
     # The capture happens DURING the run; if the live repro output leaks a
     # FAIL_TO_PASS node id, the hook records it + skips injection. The run itself
     # completes, but the arm is voided (route-b1-cells excludes it via leak_clean).
-    payload = build_b1_payload(instance_id="pkg__pkg-1", problem_statement=ISSUE_WITH_REPRO, repro_traceback=None)
+    payload = build_b1_payload(
+        instance_id="pkg__pkg-1", problem_statement=ISSUE_WITH_REPRO, repro_traceback=None
+    )
     leak = B1LeakRefs(fail_to_pass=["tests/test_foo.py::test_empty"])
-    spec = _exec_spec(tmp_path, payload, leak=leak, executor=lambda s: "Traceback...\n tests/test_foo.py::test_empty")
+    spec = _exec_spec(
+        tmp_path,
+        payload,
+        leak=leak,
+        executor=lambda s: "Traceback...\n tests/test_foo.py::test_empty",
+    )
     res = run_sweagent_b1_live_single(
         spec=spec,
         policy=RuntimePermissionPolicy(allow_docker=True, allow_external_provider=True),
@@ -413,9 +474,16 @@ def test_cli_live_arm_plan(tmp_path: Path) -> None:
     res = runner.invoke(
         app,
         [
-            "route-b1-live-arm", str(cfg), "-o", str(tmp_path / "arm"),
-            "--arm", "treatment", "--source-task-id", "pkg__pkg-1",
-            "--problem-statement-file", str(issue),
+            "route-b1-live-arm",
+            str(cfg),
+            "-o",
+            str(tmp_path / "arm"),
+            "--arm",
+            "treatment",
+            "--source-task-id",
+            "pkg__pkg-1",
+            "--problem-statement-file",
+            str(issue),
         ],
     )
     assert res.exit_code == 0, res.output

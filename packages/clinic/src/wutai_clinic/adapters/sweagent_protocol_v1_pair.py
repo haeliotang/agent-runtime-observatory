@@ -41,7 +41,9 @@ def _load_json(path: Path) -> dict[str, Any]:
 def _load_jsonl(path: Path) -> list[dict[str, Any]]:
     if not path.is_file():
         return []
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
 
 
 def _artifact(path: Path) -> dict[str, Any]:
@@ -188,7 +190,9 @@ def run_sweagent_protocol_v1_live_pair(
         "control_replay_prefix_valid": _replay_prefix_valid(control_events, replay_count),
         "treatment_replay_prefix_valid": _replay_prefix_valid(treatment_events, replay_count),
         "replay_prefix_output_hashes_match": replay_hashes_match,
-        "control_generation_started_after_replay": _generation_started(control_events, replay_count),
+        "control_generation_started_after_replay": _generation_started(
+            control_events, replay_count
+        ),
         "treatment_generation_started_after_replay": _generation_started(
             treatment_events, replay_count
         ),

@@ -112,9 +112,7 @@ def default_capsule_payload(messages: list[dict[str, Any]]) -> dict[str, str]:
     }
 
 
-def _capsule_builder(
-    base_payload: dict[str, str], overrides: dict[str, str] | None = None
-) -> Any:
+def _capsule_builder(base_payload: dict[str, str], overrides: dict[str, str] | None = None) -> Any:
     def build(context: CapsuleBuildContext) -> StateCapsule:
         payload = dict(base_payload)
         payload.update(overrides or {})
@@ -254,7 +252,9 @@ def run_paired_fork_dry_run(
         "treatment_injection_count_at_most_one": treatment.injection_count <= 1,
         "treatment_trigger_hit": treatment.trigger_hit,
         "control_not_injected": control.injection_count == 0,
-        "raw_payload_not_logged": all(event.get("raw_payload_logged") is not True for event in events),
+        "raw_payload_not_logged": all(
+            event.get("raw_payload_logged") is not True for event in events
+        ),
         "external_provider_not_called": True,
         "docker_not_started": True,
         "official_eval_not_claimed": True,
@@ -298,7 +298,8 @@ def run_paired_fork_dry_run(
         encoding="utf-8",
     )
     treatment_capsule_path.write_text(
-        json.dumps(treatment.capsule.to_dict(), ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        json.dumps(treatment.capsule.to_dict(), ensure_ascii=False, indent=2, sort_keys=True)
+        + "\n",
         encoding="utf-8",
     )
     write_jsonl(events_path, events)

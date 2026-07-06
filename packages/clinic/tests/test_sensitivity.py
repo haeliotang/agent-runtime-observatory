@@ -43,18 +43,14 @@ def test_fisher_monotonic_in_treatment_resolved() -> None:
 
 
 def test_classify_detected_at_n5_perfect() -> None:
-    res = classify_sensitivity(
-        control_outcomes=[False] * 5, treatment_outcomes=[True] * 5
-    )
+    res = classify_sensitivity(control_outcomes=[False] * 5, treatment_outcomes=[True] * 5)
     assert res["label"] == "detected"
     assert res["fisher_one_sided_p"] < 0.05
 
 
 def test_classify_boundary_n3_is_not_detected() -> None:
     # 3/3 vs 0/3 -> p == 0.05 exactly; conservative strict test must NOT call it detected.
-    res = classify_sensitivity(
-        control_outcomes=[False] * 3, treatment_outcomes=[True] * 3
-    )
+    res = classify_sensitivity(control_outcomes=[False] * 3, treatment_outcomes=[True] * 3)
     assert res["label"] == "flip_observed_underpowered"
 
 
@@ -66,9 +62,7 @@ def test_classify_underpowered_partial_flip() -> None:
 
 
 def test_classify_not_detected_zero_flip() -> None:
-    res = classify_sensitivity(
-        control_outcomes=[False] * 5, treatment_outcomes=[False] * 5
-    )
+    res = classify_sensitivity(control_outcomes=[False] * 5, treatment_outcomes=[False] * 5)
     assert res["label"] == "not_detected"
 
 
@@ -143,10 +137,14 @@ def test_cli_instrument_sensitivity_outcome(tmp_path: Path) -> None:
         app,
         [
             "instrument-sensitivity-outcome",
-            "--source-task-id", "pallets__flask-4045",
-            "--distillation-level", "verbatim",
-            "--control-outcomes", "0,0,0,0,0",
-            "-o", str(out),
+            "--source-task-id",
+            "pallets__flask-4045",
+            "--distillation-level",
+            "verbatim",
+            "--control-outcomes",
+            "0,0,0,0,0",
+            "-o",
+            str(out),
             *treat_args,
         ],
     )

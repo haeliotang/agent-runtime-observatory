@@ -284,11 +284,14 @@ def run_sweagent_live_single(
         "reference_capsule_if_treatment_execute": not spec.execute or treatment_reference_ready,
         "docker_ack_if_execute": not spec.execute or policy.allow_docker,
         "external_provider_ack_if_execute": not spec.execute or policy.allow_external_provider,
-        "official_eval_ack_if_required": not spec.require_official_eval or policy.allow_official_eval,
+        "official_eval_ack_if_required": not spec.require_official_eval
+        or policy.allow_official_eval,
         "official_eval_not_claimed": not spec.require_official_eval or policy.allow_official_eval,
         "generalized_uplift_claim_not_made": True,
     }
-    should_run = spec.execute and authorized and config_exists and treatment_reference_ready and replay_ready
+    should_run = (
+        spec.execute and authorized and config_exists and treatment_reference_ready and replay_ready
+    )
     attachment = None
     run_error = None
     run_result_type = None
@@ -372,10 +375,7 @@ def run_sweagent_live_single(
     if attachment is not None:
         events = [
             {"event_type": "model_query", **event} for event in attachment.hybrid_model.event_rows()
-        ] + [
-            {"event_type": "capsule_hook", **event}
-            for event in attachment.hook.safe_audit_events
-        ]
+        ] + [{"event_type": "capsule_hook", **event} for event in attachment.hook.safe_audit_events]
         if attachment.hook.capsule is not None:
             _write_json(capsule_path, attachment.hook.capsule.to_dict())
     write_jsonl(events_path, events)

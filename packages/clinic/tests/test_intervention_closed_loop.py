@@ -48,7 +48,9 @@ def test_closed_loop_report_gates_batch01_evidence() -> None:
 
 
 def test_closed_loop_report_gates_cumulative_batch1_batch2_evidence() -> None:
-    cumulative_report = json.loads((MODELS / "phase316_cumulative_diagnosis_report.json").read_text())
+    cumulative_report = json.loads(
+        (MODELS / "phase316_cumulative_diagnosis_report.json").read_text()
+    )
     trigger_review = json.loads((MODELS / "phase316_trigger_policy_review_report.json").read_text())
 
     report, pairs, arms, attribution = closed_loop_report(
@@ -68,9 +70,12 @@ def test_closed_loop_report_gates_cumulative_batch1_batch2_evidence() -> None:
     assert attribution["trigger_miss_pairs"] == 6
     assert attribution["resolved_delta"] == 1
     assert report["cumulative_summary"]["selected_pair_count"] == 8
-    assert report["trigger_policy_review"]["continuation_policy"][
-        "require_live_trigger_recalibration_protocol_before_batch3"
-    ] is True
+    assert (
+        report["trigger_policy_review"]["continuation_policy"][
+            "require_live_trigger_recalibration_protocol_before_batch3"
+        ]
+        is True
+    )
 
 
 def test_write_closed_loop_evidence_artifacts(tmp_path: Path) -> None:

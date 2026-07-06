@@ -64,9 +64,19 @@ def test_cell_control_report_is_minimal() -> None:
 
 
 def test_cell_carries_run_ok_from_report() -> None:
-    crashed = {"arm_type": "control", "source_task_id": "a", "injection_count": 0, "run_exit_ok": False}
+    crashed = {
+        "arm_type": "control",
+        "source_task_id": "a",
+        "injection_count": 0,
+        "run_exit_ok": False,
+    }
     assert cell_from_arm_report(crashed, rep=1, resolved=False)["run_ok"] is False
-    clean = {"arm_type": "control", "source_task_id": "a", "injection_count": 0, "run_exit_ok": True}
+    clean = {
+        "arm_type": "control",
+        "source_task_id": "a",
+        "injection_count": 0,
+        "run_exit_ok": True,
+    }
     assert cell_from_arm_report(clean, rep=1, resolved=False)["run_ok"] is True
 
 
@@ -80,8 +90,27 @@ def test_crashed_cells_excluded_from_decision() -> None:
     # must NOT count as a deterministic-fail anchor.
     cells = []
     for rep in range(1, 6):
-        cells.append({"anchor": "a", "arm": "control", "resolved": False, "injection_count": 0, "run_ok": False})
-        cells.append({"anchor": "a", "arm": "treatment", "resolved": False, "injection_count": 1, "injected_once": True, "leak_clean": True, "trigger_hit": True, "run_ok": False})
+        cells.append(
+            {
+                "anchor": "a",
+                "arm": "control",
+                "resolved": False,
+                "injection_count": 0,
+                "run_ok": False,
+            }
+        )
+        cells.append(
+            {
+                "anchor": "a",
+                "arm": "treatment",
+                "resolved": False,
+                "injection_count": 1,
+                "injected_once": True,
+                "leak_clean": True,
+                "trigger_hit": True,
+                "run_ok": False,
+            }
+        )
     outcomes = aggregate_cells_to_anchor_outcomes(cells)
     r = route_b1_decision(outcomes)
     # nothing valid counts -> inconclusive, NOT a false futility_null
@@ -125,7 +154,15 @@ def test_cli_cells_then_feeds_decision(tmp_path: Path) -> None:
     )
     out_dir = tmp_path / "cells"
     res = runner.invoke(
-        app, ["route-b1-cells", str(tmp_path / "arms"), "--resolved-labels", str(labels), "-o", str(out_dir)]
+        app,
+        [
+            "route-b1-cells",
+            str(tmp_path / "arms"),
+            "--resolved-labels",
+            str(labels),
+            "-o",
+            str(out_dir),
+        ],
     )
     assert res.exit_code == 0, res.output
     out = json.loads(res.output)
@@ -133,6 +170,8 @@ def test_cli_cells_then_feeds_decision(tmp_path: Path) -> None:
     assert out["cell_count"] == 2
 
     # the assembled cells must drive route-b1-decision end to end
-    dec = runner.invoke(app, ["route-b1-decision", str(out_dir / "b1_cells.jsonl"), "-o", str(tmp_path / "dec")])
+    dec = runner.invoke(
+        app, ["route-b1-decision", str(out_dir / "b1_cells.jsonl"), "-o", str(tmp_path / "dec")]
+    )
     assert dec.exit_code == 0, dec.output
     assert json.loads(dec.output)["decision"] == "route_b1_probe_signal_of_life"

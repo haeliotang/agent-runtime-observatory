@@ -100,7 +100,6 @@ def test_protocol_v2_hook_on_action_started_raises_violation_for_blocked_action(
     assert exc.value.event["constraint_id"] == "require_explicit_failure_reproduction"
 
 
-
 def test_protocol_v2_hook_observe_only_records_without_raising() -> None:
     hook = ProtocolV2ConstraintHook(
         protocol=protocol_v2_prescription_template(),
@@ -109,9 +108,7 @@ def test_protocol_v2_hook_observe_only_records_without_raising() -> None:
     )
 
     # Same action that raises in enforce mode must pass in observe-only mode.
-    hook.on_action_started(
-        step={"action": "str_replace_editor str_replace /testbed/sphinx/foo.py"}
-    )
+    hook.on_action_started(step={"action": "str_replace_editor str_replace /testbed/sphinx/foo.py"})
 
     (event,) = hook.audit_events
     assert event["event"] == "protocol_v2_action_would_block_observe_only"

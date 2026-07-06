@@ -64,7 +64,9 @@ def _write_json(path: Path, payload: Any) -> None:
     )
 
 
-def _select_candidate(candidate_rows: list[dict[str, Any]], pair_id: str | None) -> dict[str, Any] | None:
+def _select_candidate(
+    candidate_rows: list[dict[str, Any]], pair_id: str | None
+) -> dict[str, Any] | None:
     if not candidate_rows:
         return None
     if pair_id is None:
@@ -88,12 +90,16 @@ def _candidate_features(candidate: dict[str, Any] | None) -> dict[str, Any]:
         if {"recurrence_spike", "loop_or_duplicate_pattern"} & reason_codes
         else 0.0,
         "step_count": int(context.get("step_count", 0) or 0),
-        "candidate_static_prefix_index": int(candidate.get("candidate_static_prefix_index", 0) or 0),
+        "candidate_static_prefix_index": int(
+            candidate.get("candidate_static_prefix_index", 0) or 0
+        ),
     }
 
 
 def _candidate_protocol(candidate: dict[str, Any] | None) -> InterventionProtocol:
-    policy_id = str((candidate or {}).get("intervention_policy_id") or "break_recurrence_and_replan")
+    policy_id = str(
+        (candidate or {}).get("intervention_policy_id") or "break_recurrence_and_replan"
+    )
     if policy_id not in INTERVENTION_POLICIES:
         policy_id = "break_recurrence_and_replan"
     if policy_id == "insert_validation_checkpoint":
@@ -181,8 +187,7 @@ def _live_hook_gates(
             and candidate.get("recalibrated_trigger_mode") == "live_feature_signature_window"
         ),
         "candidate_disables_exact_static_prefix": (
-            candidate is not None
-            and candidate.get("exact_static_prefix_trigger_disabled") is True
+            candidate is not None and candidate.get("exact_static_prefix_trigger_disabled") is True
         ),
         "candidate_not_batch3_authorized": (
             candidate is not None and candidate.get("batch3_real_run_authorized") is False

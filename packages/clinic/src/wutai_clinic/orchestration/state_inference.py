@@ -3,6 +3,7 @@
 Disk artifacts are the single source of truth.  No live execution, Docker,
 provider calls, or official-eval is ever triggered from this module.
 """
+
 from __future__ import annotations
 
 import json

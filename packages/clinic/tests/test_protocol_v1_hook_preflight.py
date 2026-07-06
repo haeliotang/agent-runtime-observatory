@@ -89,7 +89,9 @@ def test_protocol_v1_hook_preflight_proves_actual_blocking_without_live_run() ->
     assert report["summary"]["runner_started"] is False
     assert report["summary"]["model_call_started"] is False
     assert report["summary"]["docker_or_official_eval_started"] is False
-    assert report["continuation_policy"]["allow_protocol_v1_live_single_adapter_integration"] is True
+    assert (
+        report["continuation_policy"]["allow_protocol_v1_live_single_adapter_integration"] is True
+    )
     assert report["continuation_policy"]["allow_protocol_v1_real_run"] is False
 
 
@@ -105,7 +107,9 @@ def test_protocol_v1_hook_preflight_blocks_when_adapter_preflight_not_ready() ->
     assert report["passed"] is False
     assert report["decision"] == "protocol_v1_constraint_hook_preflight_blocked"
     assert report["gates"]["adapter_preflight_passed"] is False
-    assert report["continuation_policy"]["allow_protocol_v1_live_single_adapter_integration"] is False
+    assert (
+        report["continuation_policy"]["allow_protocol_v1_live_single_adapter_integration"] is False
+    )
     assert report["continuation_policy"]["allow_protocol_v1_real_run"] is False
 
 

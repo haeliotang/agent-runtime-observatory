@@ -85,9 +85,7 @@ def discordant_pair_test(n_uplift: int, n_harm: int) -> dict[str, Any]:
     }
 
 
-def max_effect_excluded(
-    n_pairs_effective: int, n_uplift: int, confidence: float = 0.95
-) -> float:
+def max_effect_excluded(n_pairs_effective: int, n_uplift: int, confidence: float = 0.95) -> float:
     """Largest per-pair uplift rate excluded at the given confidence.
 
     Returns the maximum p such that P(X <= n_uplift | n_pairs_effective, p) is
@@ -184,9 +182,7 @@ def futility_boundary(
         # Enforce monotonic non-decreasing boundary across checkpoints.
         boundary = max(boundary, prev)
         prev = boundary
-        checkpoints.append(
-            {"pairs_completed": k, "max_uplift_to_declare_futile": boundary}
-        )
+        checkpoints.append({"pairs_completed": k, "max_uplift_to_declare_futile": boundary})
     return {"alpha_futility": alpha_futility, "checkpoints": checkpoints}
 
 
@@ -236,9 +232,7 @@ def build_power_report(
         "target_uplift_rate": target_uplift_rate,
         # P(X <= n_uplift | n_pairs, target): how consistent the observed count
         # is with the target rate. Small values argue against the target rate.
-        "p_value_observed_le_target": exact_binomial_tail(
-            n_uplift, n_pairs, target_uplift_rate
-        ),
+        "p_value_observed_le_target": exact_binomial_tail(n_uplift, n_pairs, target_uplift_rate),
         "p_value_observed_ge_under_null_zero": 1.0 if n_uplift == 0 else 0.0,
     }
     discordant_test_result = discordant_pair_test(n_uplift, n_harm)
@@ -306,9 +300,7 @@ def build_power_report(
 
 
 def _write_json(path: Path, payload: Any) -> None:
-    path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    )
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
 
 
 def _artifact(path: Path) -> dict[str, Any]:

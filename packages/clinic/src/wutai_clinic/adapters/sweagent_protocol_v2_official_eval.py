@@ -132,7 +132,9 @@ def run_sweagent_protocol_v2_official_eval(
     pair_id = str(pair_id or "protocol_v2_single_pair")
     source_task_id = pair_report.get("source_task_id") or pair_summary.get("source_task_id")
     source_task_id = str(source_task_id) if source_task_id else None
-    control_patch = _resolve_path(pair_summary.get("control_patch_archive_path"), base=spec.pair_dir)
+    control_patch = _resolve_path(
+        pair_summary.get("control_patch_archive_path"), base=spec.pair_dir
+    )
     treatment_patch = _resolve_path(
         pair_summary.get("intervention_patch_archive_path"),
         base=spec.pair_dir,
@@ -157,7 +159,12 @@ def run_sweagent_protocol_v2_official_eval(
     eval_isolated = not _is_same_or_child(eval_dir, spec.pair_dir)
     run_results = []
     official_eval_run_authorized = not spec.run_official_eval or policy.allow_official_eval
-    if spec.run_official_eval and official_eval_run_authorized and source_task_id and prediction_rows:
+    if (
+        spec.run_official_eval
+        and official_eval_run_authorized
+        and source_task_id
+        and prediction_rows
+    ):
         for arm_type, row in prediction_rows.items():
             run_results.append(
                 _run_official_eval(
@@ -227,7 +234,8 @@ def run_sweagent_protocol_v2_official_eval(
             and pair_report.get("passed") is True
         ),
         "source_task_id_present": source_task_id is not None,
-        "control_patch_archive_present": control_patch.is_file() and control_patch.stat().st_size > 0,
+        "control_patch_archive_present": control_patch.is_file()
+        and control_patch.stat().st_size > 0,
         "treatment_patch_archive_present": treatment_patch.is_file()
         and treatment_patch.stat().st_size > 0,
         "prediction_files_written": len(prediction_rows) == 2,

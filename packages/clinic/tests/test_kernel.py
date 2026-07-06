@@ -29,9 +29,9 @@ def test_paired_stats_reexports_work() -> None:
     lower, upper = wilson_interval(0, 6)
     assert lower == 0.0 and upper > 0.3
     assert flip_rate_estimate([False, False])["flip_count"] == 0
-    assert required_pairs(target_uplift_rate=0.3, trigger_hit_rate=1.0)[
-        "required_effective_pairs"
-    ] > 0
+    assert (
+        required_pairs(target_uplift_rate=0.3, trigger_hit_rate=1.0)["required_effective_pairs"] > 0
+    )
 
 
 # ---------------------------------------------------------------------------

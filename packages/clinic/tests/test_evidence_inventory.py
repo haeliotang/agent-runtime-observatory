@@ -310,10 +310,22 @@ class TestScanEvidenceRoot:
         # Also put it in a mat dir
         mat_dir = tmp_path / "protocol_v2_fresh_state_capsule_pair_inputs" / "scipy__scipy-1234"
         mat_dir.mkdir(parents=True)
-        _write_report(mat_dir, "scipy__scipy-1234_live_pair_inputs_report.json", {"source_task_id": "scipy__scipy-1234"})
+        _write_report(
+            mat_dir,
+            "scipy__scipy-1234_live_pair_inputs_report.json",
+            {"source_task_id": "scipy__scipy-1234"},
+        )
         rows = scan_evidence_root(tmp_path)
-        completed = [r for r in rows if r.instance_id == "scipy__scipy-1234" and r.status == STATUS_OFFICIAL_EVAL_COMPLETED]
-        mat = [r for r in rows if r.instance_id == "scipy__scipy-1234" and r.status == STATUS_MATERIALIZED_NOT_EXECUTED]
+        completed = [
+            r
+            for r in rows
+            if r.instance_id == "scipy__scipy-1234" and r.status == STATUS_OFFICIAL_EVAL_COMPLETED
+        ]
+        mat = [
+            r
+            for r in rows
+            if r.instance_id == "scipy__scipy-1234" and r.status == STATUS_MATERIALIZED_NOT_EXECUTED
+        ]
         assert len(completed) >= 1
         assert len(mat) == 0
 
@@ -461,6 +473,7 @@ class TestBuildIndexSummary:
                 manifest_ok=None,
                 generated_at="",
             )
+
         rows = [_no_uplift_row("a"), _no_uplift_row("b"), _no_uplift_row("c")]
         s = build_index_summary(rows)
         assert s["uplift_pair_count"] == 0

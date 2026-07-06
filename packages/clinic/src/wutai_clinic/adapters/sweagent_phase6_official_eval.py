@@ -361,12 +361,16 @@ def run_sweagent_phase6_official_eval(
             }
 
     eval_isolated = not any(
-        _is_same_or_child(eval_dir, live_dir)
-        for live_dir in [control_dir, treatment_dir, pair_dir]
+        _is_same_or_child(eval_dir, live_dir) for live_dir in [control_dir, treatment_dir, pair_dir]
     )
     run_results = []
     official_eval_run_authorized = not spec.run_official_eval or policy.allow_official_eval
-    if spec.run_official_eval and official_eval_run_authorized and source_task_id and prediction_rows:
+    if (
+        spec.run_official_eval
+        and official_eval_run_authorized
+        and source_task_id
+        and prediction_rows
+    ):
         for arm_type, row in prediction_rows.items():
             run_results.append(
                 _run_official_eval(
@@ -481,7 +485,11 @@ def run_sweagent_phase6_official_eval(
         )
     if not structural_passed:
         decision = "phase6_official_eval_blocked"
-    elif official_completed and final_pair_result and final_pair_result["report"].get("passed") is True:
+    elif (
+        official_completed
+        and final_pair_result
+        and final_pair_result["report"].get("passed") is True
+    ):
         decision = "phase6_official_eval_outcome_label_ready"
     elif spec.run_official_eval and run_results:
         decision = "phase6_official_eval_pending_or_failed"

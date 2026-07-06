@@ -52,7 +52,9 @@ class IssueReproEligibility:
     reason: str
 
 
-def issue_repro_eligibility(instance_id: str, problem_statement: str | None) -> IssueReproEligibility:
+def issue_repro_eligibility(
+    instance_id: str, problem_statement: str | None
+) -> IssueReproEligibility:
     """Decide whether an instance's issue text carries an actionable reproduction
     derivable WITHOUT the official test. Amendment A §4 anchor screen."""
     text = (problem_statement or "").strip()
@@ -68,7 +70,9 @@ def issue_repro_eligibility(instance_id: str, problem_statement: str | None) -> 
     return IssueReproEligibility(instance_id, eligible, tuple(found), reason)
 
 
-def extract_issue_reproduction_steps(problem_statement: str | None, *, max_chars: int = 4000) -> str:
+def extract_issue_reproduction_steps(
+    problem_statement: str | None, *, max_chars: int = 4000
+) -> str:
     """Pull the reproduction-bearing part of the issue (code fences / repro section).
     Issue text only; never the official test."""
     text = (problem_statement or "").strip()

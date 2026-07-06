@@ -95,7 +95,9 @@ class ProtocolV2Trigger:
         sources = tuple(str(item) for item in data.get("evidence_sources") or [])
         allowed_sources = {"live_feature", "prefix_observation"}
         if not sources or any(source not in allowed_sources for source in sources):
-            raise ValueError("Protocol v2 trigger evidence must come from live features/prefix observations")
+            raise ValueError(
+                "Protocol v2 trigger evidence must come from live features/prefix observations"
+            )
         oracle_terms = _find_runtime_oracle_terms({"predicates": predicates, "sources": sources})
         if oracle_terms:
             raise ValueError(
@@ -123,9 +125,13 @@ class ProtocolV2Action:
         unknown = sorted(set(steps) - set(expected))
         missing = sorted(set(expected) - set(steps))
         if unknown:
-            raise ValueError(f"unknown prescription steps for {prescription_id}: {', '.join(unknown)}")
+            raise ValueError(
+                f"unknown prescription steps for {prescription_id}: {', '.join(unknown)}"
+            )
         if missing:
-            raise ValueError(f"missing required prescription steps for {prescription_id}: {', '.join(missing)}")
+            raise ValueError(
+                f"missing required prescription steps for {prescription_id}: {', '.join(missing)}"
+            )
         prompt_style = str(data.get("prompt_style") or "directive_but_non_oracular")
         if prompt_style != "directive_but_non_oracular":
             raise ValueError("Protocol v2 prompt_style must be directive_but_non_oracular")

@@ -209,9 +209,7 @@ def test_write_evidence_full_tree(tmp_path: Path) -> None:
     root = tmp_path / "evidence"
     _make_evidence_tree(root)
     gold = _gold_jsonl(tmp_path / "gold.jsonl")
-    result = write_mechanistic_endpoints_evidence(
-        root, tmp_path / "out", offline_gold_path=gold
-    )
+    result = write_mechanistic_endpoints_evidence(root, tmp_path / "out", offline_gold_path=gold)
     report = result["report"]
     assert report["decision"] == "mechanistic_endpoints_ready_divergence_without_outcome_change"
     assert report["passed"] is True

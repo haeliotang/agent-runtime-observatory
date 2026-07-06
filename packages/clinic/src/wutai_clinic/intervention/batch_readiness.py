@@ -59,13 +59,11 @@ def readiness_summary(
         "stability_positive_main_count": stability.get("positive_main_count"),
         "stability_negative_main_count": stability.get("negative_main_count"),
         "stability_trigger_hit_rate": stability.get("trigger_hit_rate"),
-        "stability_allow_next_small_batch": stability_report.get(
-            "continuation_policy", {}
-        ).get("allow_next_small_batch"),
-        "trigger_review_decision": trigger_policy_review.get("decision"),
-        "same_static_prefix_allowed": trigger_policy.get(
-            "allow_batch3_same_static_prefix_policy"
+        "stability_allow_next_small_batch": stability_report.get("continuation_policy", {}).get(
+            "allow_next_small_batch"
         ),
+        "trigger_review_decision": trigger_policy_review.get("decision"),
+        "same_static_prefix_allowed": trigger_policy.get("allow_batch3_same_static_prefix_policy"),
         "recalibration_required": trigger_policy.get(
             "require_live_trigger_recalibration_protocol_before_batch3"
         ),
@@ -124,8 +122,7 @@ def readiness_gates(
         ),
         "trigger_review_passed": trigger_policy_review.get("passed") is True,
         "trigger_review_requires_recalibration": (
-            trigger_policy.get("require_live_trigger_recalibration_protocol_before_batch3")
-            is True
+            trigger_policy.get("require_live_trigger_recalibration_protocol_before_batch3") is True
         ),
         "same_static_prefix_policy_blocked": (
             trigger_policy.get("allow_batch3_same_static_prefix_policy") is False
@@ -144,8 +141,7 @@ def readiness_gates(
             runner_delta.get("dry_run_required_before_real_run") is True
         ),
         "recalibration_protocol_requires_external_authorization": (
-            runner_delta.get("new_external_provider_authorization_required_before_real_run")
-            is True
+            runner_delta.get("new_external_provider_authorization_required_before_real_run") is True
         ),
         "recalibration_protocol_does_not_change_runner": (
             runner_delta.get("runner_code_changed_by_this_protocol") is False

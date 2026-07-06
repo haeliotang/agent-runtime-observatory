@@ -2,6 +2,7 @@
 
 All functions return raw SVG strings (no external dependencies).
 """
+
 from __future__ import annotations
 
 import html
@@ -18,7 +19,7 @@ LABEL_COLORS: dict[str, str] = {
 }
 DEFAULT_CELL_COLOR = "#b0bec5"
 
-MANIFEST_NODE_COLOR = "#90caf9"   # has manifest
+MANIFEST_NODE_COLOR = "#90caf9"  # has manifest
 NO_MANIFEST_NODE_COLOR = "#ef9a9a"  # no manifest
 EDGE_COLOR = "#78909c"
 
@@ -31,6 +32,7 @@ def _label_color(effect_label: str) -> str:
 
 
 # ── Pair Outcome Matrix SVG ──────────────────────────────────────────────────
+
 
 def pair_matrix_svg(pairs: list[dict[str, Any]]) -> str:
     """Return an SVG showing stratum × instance grid coloured by effect_label."""
@@ -90,27 +92,21 @@ def pair_matrix_svg(pairs: list[dict[str, Any]]) -> str:
 
     # Summary row at top
     summary_y = header_h
-    lines.append(
-        f'<text x="5" y="{summary_y + row_h // 2 + 4}" font-weight="bold">Summary</text>'
-    )
-    summary_txt = "  ".join(
-        f"{v}×{html.escape(k[:18])}" for k, v in sorted(label_totals.items())
-    )
+    lines.append(f'<text x="5" y="{summary_y + row_h // 2 + 4}" font-weight="bold">Summary</text>')
+    summary_txt = "  ".join(f"{v}×{html.escape(k[:18])}" for k, v in sorted(label_totals.items()))
     lines.append(
         f'<text x="{label_w}" y="{summary_y + row_h // 2 + 4}" font-size="10">'
-        f'{html.escape(summary_txt)}</text>'
+        f"{html.escape(summary_txt)}</text>"
     )
     lines.append(
         f'<rect x="1" y="{summary_y}" width="{width - 2}" height="{row_h}" '
         f'fill="#e3f2fd" stroke="#90caf9" stroke-width="1" rx="2"/>'
     )
     # re-draw text on top of rect
-    lines.append(
-        f'<text x="5" y="{summary_y + row_h // 2 + 4}" font-weight="bold">Summary</text>'
-    )
+    lines.append(f'<text x="5" y="{summary_y + row_h // 2 + 4}" font-weight="bold">Summary</text>')
     lines.append(
         f'<text x="{label_w}" y="{summary_y + row_h // 2 + 4}" font-size="10">'
-        f'{html.escape(summary_txt)}</text>'
+        f"{html.escape(summary_txt)}</text>"
     )
 
     # data rows
@@ -138,7 +134,7 @@ def pair_matrix_svg(pairs: list[dict[str, Any]]) -> str:
             lines.append(
                 f'<rect x="{cx}" y="{row_y}" width="{col_w - 2}" height="{row_h - 2}" '
                 f'fill="{fill}" stroke="#ccc" stroke-width="1" rx="2">'
-                f'<title>{tooltip}</title></rect>'
+                f"<title>{tooltip}</title></rect>"
             )
             if label_short:
                 lines.append(
@@ -151,6 +147,7 @@ def pair_matrix_svg(pairs: list[dict[str, Any]]) -> str:
 
 
 # ── Evidence DAG SVG ─────────────────────────────────────────────────────────
+
 
 def dag_svg(dag: dict[str, Any], truncated: bool = False, truncated_count: int = 0) -> str:
     """Render a layered directed graph SVG from the DAG dict."""
@@ -206,8 +203,8 @@ def dag_svg(dag: dict[str, Any], truncated: bool = False, truncated_count: int =
     if truncated:
         lines.append(
             f'<text x="{margin}" y="15" font-size="11" fill="#b71c1c">'
-            f'[Truncated: showing pair-related subgraph only; '
-            f'{truncated_count} nodes omitted]</text>'
+            f"[Truncated: showing pair-related subgraph only; "
+            f"{truncated_count} nodes omitted]</text>"
         )
 
     # draw edges
@@ -228,11 +225,12 @@ def dag_svg(dag: dict[str, Any], truncated: bool = False, truncated_count: int =
             )
 
     # arrowhead marker
-    lines.insert(1,
+    lines.insert(
+        1,
         '<defs><marker id="arr" markerWidth="6" markerHeight="6" '
         'refX="5" refY="3" orient="auto">'
         f'<path d="M0,0 L6,3 L0,6 Z" fill="{EDGE_COLOR}"/>'
-        '</marker></defs>'
+        "</marker></defs>",
     )
 
     # draw nodes
@@ -250,11 +248,11 @@ def dag_svg(dag: dict[str, Any], truncated: bool = False, truncated_count: int =
         lines.append(
             f'<rect x="{x}" y="{y}" width="{node_w}" height="{node_h}" '
             f'fill="{fill}" stroke="#546e7a" stroke-width="1" rx="3">'
-            f'<title>{tooltip}</title></rect>'
+            f"<title>{tooltip}</title></rect>"
         )
         lines.append(
             f'<text x="{x + 5}" y="{y + node_h // 2 + 4}" font-size="9">'
-            f'{html.escape(short_name)}</text>'
+            f"{html.escape(short_name)}</text>"
         )
 
     lines.append("</svg>")

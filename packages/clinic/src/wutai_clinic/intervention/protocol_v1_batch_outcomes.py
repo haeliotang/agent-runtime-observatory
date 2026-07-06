@@ -63,10 +63,7 @@ def _resolve_live_pair_summary(scorecard_path: Path, official_report: dict[str, 
         root = Path(*parts[: parts.index("protocol_v1_fresh_official_eval")])
         task_id = scorecard_path.parent.name
         candidate = (
-            root
-            / "protocol_v1_fresh_live_pair"
-            / task_id
-            / "protocol_v1_live_pair_summary.jsonl"
+            root / "protocol_v1_fresh_live_pair" / task_id / "protocol_v1_live_pair_summary.jsonl"
         )
         if candidate.is_file():
             return candidate
@@ -116,17 +113,11 @@ def _normalize_protocol_v1_pair(scorecard_path: Path) -> dict[str, Any]:
         else merged.get("intervention_resolved"),
         "official_eval_completed": merged.get("official_eval_completed") is True,
         "outcome_source": merged.get("outcome_source"),
-        "replay_prefix_output_hashes_match": live_summary.get(
-            "replay_prefix_output_hashes_match"
-        ),
+        "replay_prefix_output_hashes_match": live_summary.get("replay_prefix_output_hashes_match"),
         "treatment_hook_event_count": live_summary.get("treatment_hook_event_count"),
         "control_patch_archive_sha256": live_summary.get("control_patch_archive_sha256"),
-        "intervention_patch_archive_sha256": live_summary.get(
-            "intervention_patch_archive_sha256"
-        ),
-        "state_capsule_equivalence_claimed": scorecard.get(
-            "state_capsule_equivalence_claimed"
-        ),
+        "intervention_patch_archive_sha256": live_summary.get("intervention_patch_archive_sha256"),
+        "state_capsule_equivalence_claimed": scorecard.get("state_capsule_equivalence_claimed"),
         "scorecard_path": scorecard_path.as_posix(),
         "official_report_path": official_report_path.as_posix()
         if official_report_path.is_file()

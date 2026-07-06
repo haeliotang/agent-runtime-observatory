@@ -47,14 +47,30 @@ def _normal_quantile(p: float) -> float:
     if not 0.0 < p < 1.0:
         raise ValueError("p must be in (0, 1)")
     # Coefficients for the central region |p - 0.5| <= 0.425.
-    a = (-39.69683028665376, 220.9460984245205, -275.9285104469687,
-         138.3577518672690, -30.66479806614716, 2.506628277459239)
-    b = (-54.47609879822406, 161.5858368580409, -155.6989798598866,
-         66.80131188771972, -13.28068155288572)
-    c = (-0.007784894002430293, -0.3223964580411365, -2.400758277161838,
-         -2.549732539343734, 4.374664141464968, 2.938163982698783)
-    d = (0.007784695709041462, 0.3224671290700398, 2.445134137142996,
-         3.754408661907416)
+    a = (
+        -39.69683028665376,
+        220.9460984245205,
+        -275.9285104469687,
+        138.3577518672690,
+        -30.66479806614716,
+        2.506628277459239,
+    )
+    b = (
+        -54.47609879822406,
+        161.5858368580409,
+        -155.6989798598866,
+        66.80131188771972,
+        -13.28068155288572,
+    )
+    c = (
+        -0.007784894002430293,
+        -0.3223964580411365,
+        -2.400758277161838,
+        -2.549732539343734,
+        4.374664141464968,
+        2.938163982698783,
+    )
+    d = (0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416)
     p_low = 0.02425
     if p < p_low:
         q = math.sqrt(-2 * math.log(p))
@@ -68,8 +84,10 @@ def _normal_quantile(p: float) -> float:
         )
     q = p - 0.5
     r = q * q
-    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (
-        ((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1
+    return (
+        (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5])
+        * q
+        / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1)
     )
 
 
@@ -207,9 +225,7 @@ def write_epsilon_evidence(
         "control_arm_only_semantics": True,
     }
     decision = (
-        "epsilon_noise_floor_estimated"
-        if all_reruns > 0
-        else "epsilon_blocked_no_rerun_outcomes"
+        "epsilon_noise_floor_estimated" if all_reruns > 0 else "epsilon_blocked_no_rerun_outcomes"
     )
     report = generate_report(
         phase=EPSILON_PHASE,
@@ -231,9 +247,7 @@ def write_epsilon_evidence(
         },
     )
     report_path = output_dir / "epsilon_report.json"
-    report_path.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    )
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     manifest = generate_manifest(
         phase=EPSILON_PHASE,
         report=report,

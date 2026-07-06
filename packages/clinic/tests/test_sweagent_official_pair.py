@@ -52,7 +52,13 @@ def _official_fixture(tmp_path: Path) -> tuple[Path, Path]:
     )
     _write_jsonl(
         treatment_prediction,
-        [{"instance_id": source_task_id, "model_name_or_path": "intervention", "model_patch": "diff"}],
+        [
+            {
+                "instance_id": source_task_id,
+                "model_name_or_path": "intervention",
+                "model_patch": "diff",
+            }
+        ],
     )
     _write_jsonl(
         pair_summary,
@@ -230,12 +236,7 @@ def _write_phase6_raw_official_reports(
     for arm_type, resolved in [("control", False), ("intervention", True)]:
         model_name = f"phase6_official_eval__{pair_id}__{arm_type}"
         report_path = (
-            eval_dir
-            / "logs/run_evaluation"
-            / run_id
-            / model_name
-            / source_task_id
-            / "report.json"
+            eval_dir / "logs/run_evaluation" / run_id / model_name / source_task_id / "report.json"
         )
         _write_json(
             report_path,
@@ -345,7 +346,10 @@ def test_phase6_official_eval_imports_cached_reports_and_finalizes_pair(
     assert report["effect_label"] == "intervention_only_resolved_trigger_hit_candidate"
     assert result["dual_scorecard"]["control_resolved"] is False
     assert result["dual_scorecard"]["treatment_resolved"] is True
-    assert result["final_pair_result"]["report"]["decision"] == "sweagent_live_pair_outcome_label_ready"
+    assert (
+        result["final_pair_result"]["report"]["decision"]
+        == "sweagent_live_pair_outcome_label_ready"
+    )
     assert (tmp_path / "phase6" / "predictions" / "control_django__django-14667.jsonl").exists()
     assert (tmp_path / "phase6" / "phase6_official_eval_manifest.json").exists()
 

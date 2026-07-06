@@ -27,9 +27,11 @@ from wutai_clinic.intervention.replay_protocol import InterventionProtocol, Stat
 
 UTC = timezone.utc  # py3.10 compat: datetime.UTC is 3.11+
 
+
 def default_output_dir() -> Path:
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     return Path(tempfile.gettempdir()) / f"wutai-sweagent-live-single-{stamp}"
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -50,14 +52,10 @@ def main() -> None:
     args = parser.parse_args()
 
     protocol = (
-        InterventionProtocol.from_file(Path(args.protocol))
-        if args.protocol
-        else default_protocol()
+        InterventionProtocol.from_file(Path(args.protocol)) if args.protocol else default_protocol()
     )
     reference = (
-        StateCapsule.from_file(Path(args.reference_capsule))
-        if args.reference_capsule
-        else None
+        StateCapsule.from_file(Path(args.reference_capsule)) if args.reference_capsule else None
     )
     result = run_sweagent_live_single(
         spec=SWEAgentLiveSingleSpec(
@@ -92,6 +90,7 @@ def main() -> None:
         "capsule": str(result["capsule_path"]) if result["capsule_path"] else None,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True))
+
 
 if __name__ == "__main__":
     main()

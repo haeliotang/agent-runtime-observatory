@@ -79,7 +79,9 @@ def _load_run_single_from_config(config_path: Path) -> Any:
     return RunSingle.from_config(config)
 
 
-def _make_env_executor(run_single: Any) -> ReproCaptureExecutor:  # pragma: no cover - live container
+def _make_env_executor(
+    run_single: Any,
+) -> ReproCaptureExecutor:  # pragma: no cover - live container
     """Run an issue-derived repro script in the LIVE SWE-bench container via the env
     runtime (swerex RexCommand, same path as SWEEnvRuntimeProbe). Issue-text only;
     never the official test. Called by the hook at first model query (env is live)."""
@@ -91,20 +93,30 @@ def _make_env_executor(run_single: Any) -> ReproCaptureExecutor:  # pragma: no c
         env = getattr(run_single, "env", None)
         runtime = getattr(getattr(env, "deployment", None), "runtime", None)
         if runtime is None or not hasattr(runtime, "execute"):
-            raise RuntimeError("SWE-agent env.deployment.runtime.execute is required for repro capture")
+            raise RuntimeError(
+                "SWE-agent env.deployment.runtime.execute is required for repro capture"
+            )
         # write the issue-derived repro to a file, run it, capture combined output
         written = asyncio.run(
             runtime.execute(
                 RexCommand(
                     command="cat > /tmp/b1_repro.py <<'B1_REPRO_EOF'\n" + script + "\nB1_REPRO_EOF",
-                    timeout=60, shell=True, check=False,
+                    timeout=60,
+                    shell=True,
+                    check=False,
                 )
             )
         )
         _ = written
         resp = asyncio.run(
             runtime.execute(
-                RexCommand(command="python /tmp/b1_repro.py", timeout=120, shell=True, check=False, merge_output_streams=True)
+                RexCommand(
+                    command="python /tmp/b1_repro.py",
+                    timeout=120,
+                    shell=True,
+                    check=False,
+                    merge_output_streams=True,
+                )
             )
         )
         out = str(getattr(resp, "stdout", "") or "")
@@ -154,7 +166,9 @@ def _read_native_outcome(run_single: Any) -> dict[str, Any]:
             pass
     if traj.is_file():
         try:
-            out["exit_status"] = (json.loads(traj.read_text(encoding="utf-8")).get("info") or {}).get("exit_status")
+            out["exit_status"] = (
+                json.loads(traj.read_text(encoding="utf-8")).get("info") or {}
+            ).get("exit_status")
         except Exception:  # pragma: no cover - defensive
             pass
     return out
@@ -220,7 +234,8 @@ def run_sweagent_b1_live_single(
         ),
         "docker_ack_if_execute": not spec.execute or policy.allow_docker,
         "external_provider_ack_if_execute": not spec.execute or policy.allow_external_provider,
-        "official_eval_ack_if_required": not spec.require_official_eval or policy.allow_official_eval,
+        "official_eval_ack_if_required": not spec.require_official_eval
+        or policy.allow_official_eval,
         "raw_payload_logging_disabled": spec.protocol.guard.raw_payload_logging is False,
         "uplift_claim_not_made": spec.protocol.guard.uplift_claim_allowed is False,
     }
@@ -254,7 +269,8 @@ def run_sweagent_b1_live_single(
                 # when the container is live (pre-run capture raised DeploymentNotStarted).
                 hook = ProtocolB1InjectionHook(
                     protocol=spec.protocol,
-                    issue_reproduction_steps=(spec.payload or {}).get("issue_reproduction_steps") or "",
+                    issue_reproduction_steps=(spec.payload or {}).get("issue_reproduction_steps")
+                    or "",
                     source_task_id=spec.source_task_id,
                     pair_id=spec.pair_id,
                     capture_executor=spec.repro_executor or _make_env_executor(run_single),
@@ -269,8 +285,16 @@ def run_sweagent_b1_live_single(
             # authoritative source is the saved native output on disk; fall back
             # to the result object (for tests / other SWE-agent versions).
             native = _read_native_outcome(run_single)
-            run_exit_status = native["exit_status"] if native["exit_status"] is not None else _extract_exit_status(result)
-            submission = native["submission"] if native["submission"] is not None else _extract_submission(result)
+            run_exit_status = (
+                native["exit_status"]
+                if native["exit_status"] is not None
+                else _extract_exit_status(result)
+            )
+            submission = (
+                native["submission"]
+                if native["submission"] is not None
+                else _extract_submission(result)
+            )
             if hook is not None:  # read what the hook captured/injected DURING the run
                 capture_traceback = hook.captured_traceback
                 capture_leak_findings = hook.capture_leak_findings
@@ -322,7 +346,11 @@ def run_sweagent_b1_live_single(
         decision = "route_b1_live_arm_run_completed"
 
     arm_complete = (
-        should_run and run_single_started and run_error is None and injection_void is None and run_exit_ok
+        should_run
+        and run_single_started
+        and run_error is None
+        and injection_void is None
+        and run_exit_ok
     )
 
     protocol_path = spec.output_dir / "b1_live_arm_protocol.json"
@@ -393,7 +421,14 @@ def run_sweagent_b1_live_single(
         report=report,
         artifacts=[
             _artifact(p)
-            for p in [spec.config_path, protocol_path, payload_path, events_path, patch_path, report_path]
+            for p in [
+                spec.config_path,
+                protocol_path,
+                payload_path,
+                events_path,
+                patch_path,
+                report_path,
+            ]
         ],
     )
     manifest["version"] = SWEAGENT_B1_LIVE_SINGLE_VERSION

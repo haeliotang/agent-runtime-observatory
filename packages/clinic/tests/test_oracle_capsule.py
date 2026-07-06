@@ -53,9 +53,7 @@ def test_distill_no_raw_diff_lines() -> None:
         if line.startswith(("+", "-")) and not line.startswith(("+++", "---")):
             stripped = line[1:].strip()
             if len(stripped) >= 8:
-                assert stripped not in capsule, (
-                    f"raw diff line leaked into capsule: {stripped!r}"
-                )
+                assert stripped not in capsule, f"raw diff line leaked into capsule: {stripped!r}"
 
 
 def test_distill_contains_file_references() -> None:
@@ -126,9 +124,7 @@ def test_outcome_variant_passthrough_to_rows(tmp_path: Path) -> None:
     task_id = "sphinx-doc__sphinx-8474"
     root = tmp_path
     _make_scorecard(root, task_id, control_resolved=False, treatment_resolved=False)
-    eval_report = _oracle_eval_report(
-        tmp_path / "eval" / "report.json", task_id, resolved=False
-    )
+    eval_report = _oracle_eval_report(tmp_path / "eval" / "report.json", task_id, resolved=False)
     out = root / "protocol_v2_oracle_probe" / task_id / "dose_detailed" / "outcome"
     result = write_oracle_probe_outcome_evidence(
         root,
@@ -249,7 +245,11 @@ def _make_evidence_root_with_preflight(root: Path, task_id: str) -> None:
         "wutai_clinic": {"arm_type": "control", "instance_id": task_id},
     }
     _write_json(
-        root / "protocol_v2_planned_preflight" / task_id / "control" / "protocol_v2_runtime_config.json",
+        root
+        / "protocol_v2_planned_preflight"
+        / task_id
+        / "control"
+        / "protocol_v2_runtime_config.json",
         config,
     )
 
@@ -310,7 +310,9 @@ def test_write_prepare_report_has_claim_boundary(tmp_path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _make_scorecard(root: Path, task_id: str, *, control_resolved: bool, treatment_resolved: bool) -> None:
+def _make_scorecard(
+    root: Path, task_id: str, *, control_resolved: bool, treatment_resolved: bool
+) -> None:
     _write_json(
         root / "protocol_v2_official_eval" / task_id / "protocol_v2_dual_scorecard.json",
         {
@@ -362,7 +364,9 @@ def test_write_outcome_oracle_unresolved(tmp_path: Path) -> None:
         oracle_eval_report_path=oracle_report,
         output_dir=tmp_path / "out",
     )
-    assert result["report"]["decision"] == "oracle_probe_outcome_unmoved_channel_bottleneck_implicated"
+    assert (
+        result["report"]["decision"] == "oracle_probe_outcome_unmoved_channel_bottleneck_implicated"
+    )
     three = result["report"]["three_arm_outcomes"]
     assert three["oracle_treatment_resolved"] is False
 
@@ -458,16 +462,12 @@ def test_replay_free_variant_redirects_and_marks() -> None:
 
 def test_replay_free_variant_rejects_non_probe_config() -> None:
     with pytest.raises(ValueError, match="not an oracle probe"):
-        build_replay_free_variant_config(
-            _make_base_config(), native_output_dir=Path("/tmp/out")
-        )
+        build_replay_free_variant_config(_make_base_config(), native_output_dir=Path("/tmp/out"))
 
 
 def test_replay_free_variant_preserves_capsule() -> None:
     base = _oracle_probe_config()
-    variant = build_replay_free_variant_config(
-        base, native_output_dir=Path("/tmp/out")
-    )
+    variant = build_replay_free_variant_config(base, native_output_dir=Path("/tmp/out"))
     assert variant["problem_statement"]["text"] == base["problem_statement"]["text"]
 
 
@@ -510,9 +510,7 @@ def test_classify_replay_free_missing_eval() -> None:
 
 
 def test_classify_replay_free_missing_gold() -> None:
-    typing = classify_replay_free_probe(
-        oracle_resolved=False, patch_text="x", gold_patch_text=None
-    )
+    typing = classify_replay_free_probe(oracle_resolved=False, patch_text="x", gold_patch_text=None)
     assert typing["decision"] == "oracle_probe_replay_free_blocked_missing_patch_or_gold"
     assert typing["proximity"] is None
 
@@ -530,9 +528,7 @@ diff --git a/sphinx/util/docutils.py b/sphinx/util/docutils.py
 def test_write_replay_free_outcome_evidence(tmp_path: Path) -> None:
     task_id = "sphinx-doc__sphinx-8474"
     root = tmp_path / "evidence"
-    eval_report = _oracle_eval_report(
-        tmp_path / "eval" / "report.json", task_id, resolved=False
-    )
+    eval_report = _oracle_eval_report(tmp_path / "eval" / "report.json", task_id, resolved=False)
     patch_path = tmp_path / "rf.patch"
     patch_path.write_text(GOLD_PATCH, encoding="utf-8")
     out = tmp_path / "out"
@@ -556,7 +552,11 @@ def test_write_replay_free_outcome_evidence(tmp_path: Path) -> None:
 
 def test_load_rows_variant_passthrough(tmp_path: Path) -> None:
     _write_json(
-        tmp_path / "protocol_v2_oracle_probe" / "inst-a" / "outcome" / "oracle_probe_outcome_report.json",
+        tmp_path
+        / "protocol_v2_oracle_probe"
+        / "inst-a"
+        / "outcome"
+        / "oracle_probe_outcome_report.json",
         {
             "source_task_id": "inst-a",
             "decision": "oracle_probe_outcome_unmoved_channel_bottleneck_implicated",
@@ -564,7 +564,12 @@ def test_load_rows_variant_passthrough(tmp_path: Path) -> None:
         },
     )
     _write_json(
-        tmp_path / "protocol_v2_oracle_probe" / "inst-a" / "replay_free" / "outcome" / "oracle_probe_outcome_report.json",
+        tmp_path
+        / "protocol_v2_oracle_probe"
+        / "inst-a"
+        / "replay_free"
+        / "outcome"
+        / "oracle_probe_outcome_report.json",
         {
             "source_task_id": "inst-a",
             "decision": "oracle_probe_replay_free_unmoved_capability_ceiling_implicated",
@@ -635,9 +640,12 @@ def test_cli_oracle_probe_prepare_blocked_no_gold(tmp_path: Path) -> None:
         [
             "oracle-probe-prepare",
             str(root),
-            "--source-task-id", task_id,
-            "--offline-gold", str(gold_jsonl),
-            "-o", str(out),
+            "--source-task-id",
+            task_id,
+            "--offline-gold",
+            str(gold_jsonl),
+            "-o",
+            str(out),
         ],
     )
     assert result.exit_code == 0, result.output
@@ -660,9 +668,12 @@ def test_cli_oracle_probe_prepare_full(tmp_path: Path) -> None:
         [
             "oracle-probe-prepare",
             str(root),
-            "--source-task-id", task_id,
-            "--offline-gold", str(gold_jsonl),
-            "-o", str(out),
+            "--source-task-id",
+            task_id,
+            "--offline-gold",
+            str(gold_jsonl),
+            "-o",
+            str(out),
         ],
     )
     assert result.exit_code == 0, result.output

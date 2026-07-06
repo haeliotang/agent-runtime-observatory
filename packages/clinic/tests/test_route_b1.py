@@ -16,7 +16,11 @@ def _prereg_manifest() -> dict:
     return {
         "status": "route_b1_probe_preregistered_live_execution_not_authorized",
         "design": {
-            "anchors": ["pallets__flask-4045", "sphinx-doc__sphinx-8474", "sphinx-doc__sphinx-7686"],
+            "anchors": [
+                "pallets__flask-4045",
+                "sphinx-doc__sphinx-8474",
+                "sphinx-doc__sphinx-7686",
+            ],
             "k_reps_per_arm": 5,
         },
         "live_authorization": {"authorized": False},
@@ -44,7 +48,10 @@ def test_protocol_b1_old_leaking_repro_form_is_inexpressible() -> None:
     # constructible in code.
     payload = protocol_b1_template().to_dict()
     payload["action"]["info_kind"] = "reproduction_first"
-    payload["action"]["payload_fields"] = ["reproduction_traceback", "failing_test_assertion_expected"]
+    payload["action"]["payload_fields"] = [
+        "reproduction_traceback",
+        "failing_test_assertion_expected",
+    ]
     with pytest.raises(ValueError, match="unknown Protocol B1 info_kind"):
         ProtocolB1.from_dict(payload)
 
@@ -58,7 +65,10 @@ def test_protocol_b1_rejects_non_issue_text_provenance() -> None:
 
 def test_protocol_b1_rejects_official_test_identity_token_in_trigger() -> None:
     payload = protocol_b1_template().to_dict()
-    payload["trigger"]["predicates"] = ["fail_to_pass test reached is true", "about_to_emit_patch is true"]
+    payload["trigger"]["predicates"] = [
+        "fail_to_pass test reached is true",
+        "about_to_emit_patch is true",
+    ]
     with pytest.raises(ValueError, match="oracle/answer tokens"):
         ProtocolB1.from_dict(payload)
 

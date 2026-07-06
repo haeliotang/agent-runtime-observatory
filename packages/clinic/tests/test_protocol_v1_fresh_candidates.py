@@ -124,8 +124,13 @@ def test_protocol_v1_fresh_gate_excludes_used_pairs_and_marks_underpowered() -> 
 
 def test_protocol_v1_fresh_gate_blocks_when_all_candidates_are_contaminated() -> None:
     report = protocol_v1_fresh_candidate_report(
-        eligible_refs=[_eligible_ref("used-error", "repo__used_error", rank=1, role="failure_target")],
-        candidate_pool_report={"decision": _pool_report()["decision"], "summary": {"eligible_count": 1}},
+        eligible_refs=[
+            _eligible_ref("used-error", "repo__used_error", rank=1, role="failure_target")
+        ],
+        candidate_pool_report={
+            "decision": _pool_report()["decision"],
+            "summary": {"eligible_count": 1},
+        },
         protocol_v1_plan=_protocol_v1_plan(),
         no_uplift_diagnosis=_no_uplift_diagnosis(),
         target_pair_count=1,

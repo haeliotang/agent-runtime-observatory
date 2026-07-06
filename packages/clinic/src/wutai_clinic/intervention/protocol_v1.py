@@ -94,7 +94,9 @@ class ProtocolV1Action:
         if unknown:
             raise ValueError(f"unknown constraints for {prescription_id}: {', '.join(unknown)}")
         if missing:
-            raise ValueError(f"missing required constraints for {prescription_id}: {', '.join(missing)}")
+            raise ValueError(
+                f"missing required constraints for {prescription_id}: {', '.join(missing)}"
+            )
         return cls(
             type="enforce_action_constraints",
             prescription_id=prescription_id,

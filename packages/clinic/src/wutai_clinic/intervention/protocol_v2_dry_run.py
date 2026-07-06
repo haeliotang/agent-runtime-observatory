@@ -159,11 +159,7 @@ def protocol_v2_dry_run_gates(
         )
     target_rows = _target_rows(outcome_rows)
     payload_audit_projection = {
-        "plan": {
-            key: value
-            for key, value in plan.items()
-            if key != "pairs"
-        },
+        "plan": {key: value for key, value in plan.items() if key != "pairs"},
         "pairs": [
             {key: value for key, value in row.items() if key != "protocol_v2"}
             for row in plan.get("pairs") or []
@@ -195,8 +191,9 @@ def protocol_v2_dry_run_gates(
         "protocol_hashes_match": protocol_hashes_match,
         "runtime_oracle_live_features_only": _all_pairs(
             plan,
-            lambda row: row.get("runtime_oracle_source")
-            == "live_feature_and_prefix_observation_only",
+            lambda row: (
+                row.get("runtime_oracle_source") == "live_feature_and_prefix_observation_only"
+            ),
         ),
         "dry_run_event_count_matches_pairs": len(events) == len(plan.get("pairs") or []),
         "dry_run_started_no_model_or_runner": bool(events)
@@ -311,7 +308,9 @@ def write_protocol_v2_dry_run_evidence(
             "continuation_policy": report["continuation_policy"],
         },
     )
-    artifacts = [_artifact(path) for path in [plan_path, rows_path, events_path, report_path, summary_path]]
+    artifacts = [
+        _artifact(path) for path in [plan_path, rows_path, events_path, report_path, summary_path]
+    ]
     artifacts.extend(_artifact(path) for path in input_artifacts or [])
     manifest = generate_manifest(
         phase=PROTOCOL_V2_DRY_RUN_PHASE,

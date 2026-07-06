@@ -110,9 +110,7 @@ def test_protocol_v1_batch_outcomes_stratifies_v1_from_v0_reference(tmp_path: Pa
     assert summary["protocol_v1_pair_count"] == 1
     assert summary["protocol_v1_positive_count"] == 0
     assert summary["protocol_v1_no_uplift_count"] == 1
-    assert summary["protocol_v1_trajectory_outcome_counts"] == {
-        "trajectory_diverged_no_uplift": 1
-    }
+    assert summary["protocol_v1_trajectory_outcome_counts"] == {"trajectory_diverged_no_uplift": 1}
     assert summary["v0_reference_pair_count"] == 1
     assert summary["v0_reference_label_counts"] == {
         "intervention_only_resolved_trigger_hit_candidate": 1

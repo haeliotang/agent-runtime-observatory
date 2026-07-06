@@ -290,8 +290,12 @@ def _input_report(
         == "live_feature_signature_window",
         "static_prefix_disabled": candidate.get("exact_static_prefix_trigger_disabled") is True,
         "prefix_count_matches_candidate": len(outputs) == prefix_count,
-        "run_single_config_written": (output_dir / f"{candidate['source_task_id']}_run_single_config.json").is_file(),
-        "replay_actions_written": (output_dir / f"{candidate['source_task_id']}_replay_actions.json").is_file(),
+        "run_single_config_written": (
+            output_dir / f"{candidate['source_task_id']}_run_single_config.json"
+        ).is_file(),
+        "replay_actions_written": (
+            output_dir / f"{candidate['source_task_id']}_replay_actions.json"
+        ).is_file(),
         "provider_secret_not_written": no_secret_literal(config) and no_secret_literal(outputs),
         "report_does_not_embed_raw_actions": True,
         "runner_not_started": True,
@@ -301,7 +305,9 @@ def _input_report(
     return generate_report(
         phase=PROTOCOL_V2_PAIR_INPUTS_PHASE,
         decision=(
-            "protocol_v2_pair_inputs_ready" if all(gates.values()) else "protocol_v2_pair_inputs_blocked"
+            "protocol_v2_pair_inputs_ready"
+            if all(gates.values())
+            else "protocol_v2_pair_inputs_blocked"
         ),
         gate_results=gates,
         extras={
@@ -400,9 +406,7 @@ def write_protocol_v2_pair_inputs_evidence(
 ) -> dict[str, Any]:
     wanted = set(pair_ids or [])
     selected = [
-        row
-        for row in candidate_rows
-        if not wanted or str(row.get("pair_id") or "") in wanted
+        row for row in candidate_rows if not wanted or str(row.get("pair_id") or "") in wanted
     ]
     results = []
     failures = []

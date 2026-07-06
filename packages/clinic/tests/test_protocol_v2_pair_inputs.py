@@ -79,7 +79,9 @@ def test_protocol_v2_pair_inputs_materializes_secret_free_replay(tmp_path: Path)
     assert report["summary"]["materialized_count"] == 1
     child_report = result["results"][0]["report"]
     assert child_report["decision"] == "protocol_v2_pair_inputs_ready"
-    assert child_report["replay_determinism_screen"]["risk_level"] == "low_replay_nondeterminism_risk"
+    assert (
+        child_report["replay_determinism_screen"]["risk_level"] == "low_replay_nondeterminism_risk"
+    )
     assert child_report["gates"]["runner_not_started"] is True
     replay_path = result["results"][0]["replay_path"]
     replay = json.loads(replay_path.read_text())

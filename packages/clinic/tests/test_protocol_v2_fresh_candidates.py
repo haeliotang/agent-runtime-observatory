@@ -43,7 +43,9 @@ def _materialize_inputs(root: Path, task_id: str) -> None:
     task_dir = root / task_id
     _write_jsonl(task_dir / f"{task_id}_candidate.jsonl", [_candidate(f"pair-{task_id}", task_id)])
     _write_json(task_dir / f"{task_id}_replay_actions.json", ["python reproduce.py"])
-    _write_json(task_dir / f"{task_id}_run_single_config.json", {"agent": {"model": {"api_key": None}}})
+    _write_json(
+        task_dir / f"{task_id}_run_single_config.json", {"agent": {"model": {"api_key": None}}}
+    )
     _write_json(
         task_dir / f"{task_id}_live_pair_inputs_report.json",
         {
@@ -101,7 +103,10 @@ def test_protocol_v2_fresh_candidates_keep_only_uncontaminated_failure_target(
 
     report = result["report"]
     assert report["passed"] is True
-    assert report["decision"] == "protocol_v2_fresh_candidate_set_ready_limited_underpowered_no_batch_claim"
+    assert (
+        report["decision"]
+        == "protocol_v2_fresh_candidate_set_ready_limited_underpowered_no_batch_claim"
+    )
     assert report["summary"]["fresh_candidate_count"] == 1
     assert report["summary"]["exclusion_counts"] == {
         "known_replay_nondeterminism_or_state_mismatch": 1,

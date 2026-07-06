@@ -134,7 +134,11 @@ def collect_wave3_evidence(root: Path) -> dict[str, Any]:
         root / "protocol_v2_mechanistic_endpoints" / "mechanistic_endpoints_pairs.jsonl"
     )
     mech_rows = (
-        [json.loads(line) for line in mech_pairs_path.read_text(encoding="utf-8").splitlines() if line]
+        [
+            json.loads(line)
+            for line in mech_pairs_path.read_text(encoding="utf-8").splitlines()
+            if line
+        ]
         if mech_pairs_path.is_file()
         else []
     )
@@ -145,9 +149,9 @@ def collect_wave3_evidence(root: Path) -> dict[str, Any]:
     for row in oracle_rows:
         payload = _load_json(Path(row["report_path"]))
         if payload is not None:
-            probe_reports_by_variant.setdefault(row.get("variant", "with_replay_prefix"), []).append(
-                payload
-            )
+            probe_reports_by_variant.setdefault(
+                row.get("variant", "with_replay_prefix"), []
+            ).append(payload)
     validity = _load_json(root / "instance_validity" / "instance_validity_report.json")
     return {
         "batch": batch,
@@ -270,8 +274,7 @@ def build_wave3_synthesis(evidence: dict[str, Any]) -> dict[str, Any]:
         "momentum_oracle_distance": momentum["oracle_distance"] if momentum else float("nan"),
     }
     findings = [
-        {"key": key, "statement": template.format(**values)}
-        for key, template in _FINDINGS_TEMPLATE
+        {"key": key, "statement": template.format(**values)} for key, template in _FINDINGS_TEMPLATE
     ]
     return {
         "findings": findings,
@@ -370,9 +373,7 @@ def write_wave3_synthesis_evidence(root: Path, output_dir: Path) -> dict[str, An
         },
     )
     report_path = output_dir / "wave3_synthesis_report.json"
-    report_path.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    )
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     markdown_path = output_dir / "wave3_synthesis.md"
     markdown_path.write_text(render_wave3_markdown(report) + "\n", encoding="utf-8")
     manifest = generate_manifest(

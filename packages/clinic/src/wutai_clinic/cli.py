@@ -186,7 +186,6 @@ def _resolve_artifact_path(evidence_dir: Path, raw_path: str) -> Path:
     return candidates[0]
 
 
-
 @app.command()
 def doctor(
     evidence_dir: Path = typer.Argument(..., help="Observatory artifact directory to scan."),
@@ -357,7 +356,9 @@ def intervene(
 @app.command("closed-loop")
 def closed_loop(
     diagnoses: Path = typer.Argument(..., help="Phase 3.11 diagnosis candidates JSONL."),
-    pair_summaries: list[Path] = typer.Argument(..., help="Official eval pair summary JSONL files."),
+    pair_summaries: list[Path] = typer.Argument(
+        ..., help="Official eval pair summary JSONL files."
+    ),
     output_dir: Path = typer.Option(..., "--output-dir", "-o", help="Evidence package directory."),
     cumulative_report: Optional[Path] = typer.Option(
         None, "--cumulative-report", help="Optional cumulative diagnosis report JSON."
@@ -400,7 +401,9 @@ def closed_loop(
 
 @app.command("batch-stability")
 def batch_stability(
-    pair_summaries: list[Path] = typer.Argument(..., help="Official eval pair summary JSONL files."),
+    pair_summaries: list[Path] = typer.Argument(
+        ..., help="Official eval pair summary JSONL files."
+    ),
     output_dir: Path = typer.Option(..., "--output-dir", "-o", help="Evidence package directory."),
     target_main_pairs: int = typer.Option(
         4,
@@ -447,7 +450,9 @@ def batch_stability(
 def batch3_readiness(
     stability_report: Path = typer.Argument(..., help="Batch stability report JSON."),
     trigger_policy_review: Path = typer.Argument(..., help="Trigger policy review report JSON."),
-    recalibration_report: Path = typer.Argument(..., help="Live-trigger recalibration report JSON."),
+    recalibration_report: Path = typer.Argument(
+        ..., help="Live-trigger recalibration report JSON."
+    ),
     recalibration_protocol: Path = typer.Argument(
         ..., help="Live-trigger recalibration protocol JSON."
     ),
@@ -461,9 +466,7 @@ def batch3_readiness(
 ) -> None:
     """Gate batch-3 expansion readiness without authorizing a real run."""
     dry_run_payload = (
-        json.loads(live_feature_dry_run_report.read_text())
-        if live_feature_dry_run_report
-        else None
+        json.loads(live_feature_dry_run_report.read_text()) if live_feature_dry_run_report else None
     )
     input_artifacts = [
         stability_report,
@@ -586,10 +589,14 @@ def protocol_check(
         None, "--feature-windows", help="Optional JSON/JSONL feature windows for dry simulation."
     ),
     control_resolved: Optional[str] = typer.Option(
-        None, "--control-resolved", help="Optional control outcome: true/false or resolved/unresolved."
+        None,
+        "--control-resolved",
+        help="Optional control outcome: true/false or resolved/unresolved.",
     ),
     treatment_resolved: Optional[str] = typer.Option(
-        None, "--treatment-resolved", help="Optional treatment outcome: true/false or resolved/unresolved."
+        None,
+        "--treatment-resolved",
+        help="Optional treatment outcome: true/false or resolved/unresolved.",
     ),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output JSON report path."),
 ) -> None:
@@ -843,7 +850,9 @@ def protocol_v2_template(
 
 @app.command("protocol-v2-dry-run")
 def protocol_v2_dry_run(
-    batch_outcomes_report: Path = typer.Argument(..., help="Protocol v1 batch outcomes report JSON."),
+    batch_outcomes_report: Path = typer.Argument(
+        ..., help="Protocol v1 batch outcomes report JSON."
+    ),
     outcome_rows: Path = typer.Argument(..., help="Protocol v1 batch outcome pairs JSONL."),
     output_dir: Path = typer.Option(..., "--output-dir", "-o", help="Evidence package directory."),
     protocol_v2_template_path: Optional[Path] = typer.Option(
@@ -937,9 +946,7 @@ def protocol_v2_fresh_candidates(
             "fresh_candidate_count": summary["fresh_candidate_count"],
             "fresh_failure_target_count": summary["fresh_failure_target_count"],
             "excluded_candidate_count": summary["excluded_candidate_count"],
-            "allow_protocol_v2_planned_preflight": policy[
-                "allow_protocol_v2_planned_preflight"
-            ],
+            "allow_protocol_v2_planned_preflight": policy["allow_protocol_v2_planned_preflight"],
             "allow_protocol_v2_real_run": policy["allow_protocol_v2_real_run"],
             "recommended_next_step": policy["recommended_next_step"],
         }
@@ -1039,7 +1046,9 @@ def protocol_v2_planned_preflight(
 
 @app.command("route-b1-plan")
 def route_b1_plan(
-    prereg_manifest: Path = typer.Argument(..., help="Route B probe prereg manifest JSON (task18)."),
+    prereg_manifest: Path = typer.Argument(
+        ..., help="Route B probe prereg manifest JSON (task18)."
+    ),
     output_dir: Path = typer.Option(..., "--output-dir", "-o", help="B1 plan evidence directory."),
 ) -> None:
     """Offline: build the Protocol B1 + per-anchor arm plan. No Docker/provider/eval."""
@@ -1067,8 +1076,12 @@ def route_b1_plan(
 @app.command("route-b1-antileak")
 def route_b1_antileak(
     plan_dir: Path = typer.Argument(..., help="Directory produced by route-b1-plan."),
-    output_dir: Path = typer.Option(..., "--output-dir", "-o", help="Anti-leak evidence directory."),
-    gold_jsonl: Optional[Path] = typer.Option(None, "--gold-jsonl", help="Gold rows (for live content-diff readiness)."),
+    output_dir: Path = typer.Option(
+        ..., "--output-dir", "-o", help="Anti-leak evidence directory."
+    ),
+    gold_jsonl: Optional[Path] = typer.Option(
+        None, "--gold-jsonl", help="Gold rows (for live content-diff readiness)."
+    ),
 ) -> None:
     """Offline: M2 contract-level anti-oracle-leakage preflight. Content diff is a live-time gate."""
     gold_task_ids: list[str] = []
@@ -1100,8 +1113,12 @@ def route_b1_antileak(
 
 @app.command("route-b1-eligibility-screen")
 def route_b1_eligibility_screen(
-    problem_statements: Path = typer.Argument(..., help="JSONL of {instance_id, problem_statement}."),
-    output_dir: Path = typer.Option(..., "--output-dir", "-o", help="Eligibility evidence directory."),
+    problem_statements: Path = typer.Argument(
+        ..., help="JSONL of {instance_id, problem_statement}."
+    ),
+    output_dir: Path = typer.Option(
+        ..., "--output-dir", "-o", help="Eligibility evidence directory."
+    ),
 ) -> None:
     """Offline (Amendment A §4): screen each anchor's issue text for an actionable,
     issue-only reproduction. Anchors without one are ineligible for the main probe."""
@@ -1121,14 +1138,26 @@ def route_b1_eligibility_screen(
         "eligible_count": len(eligible),
         "eligible_anchors": eligible,
         "rows": [
-            {"instance_id": r.instance_id, "eligible": r.eligible, "markers": list(r.markers), "reason": r.reason}
+            {
+                "instance_id": r.instance_id,
+                "eligible": r.eligible,
+                "markers": list(r.markers),
+                "reason": r.reason,
+            }
             for r in results
         ],
         "claim_boundary": "issue-text-only repro eligibility; ineligible anchors must be excluded or demoted (no oracle-leaking repro to pad the set).",
     }
     out = output_dir / "b1_eligibility_report.json"
     out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
-    _emit_json({"decision": report["decision"], "screened": report["screened"], "eligible": eligible, "report": str(out)})
+    _emit_json(
+        {
+            "decision": report["decision"],
+            "screened": report["screened"],
+            "eligible": eligible,
+            "report": str(out),
+        }
+    )
 
 
 @app.command("route-b1-live-arm")
@@ -1136,14 +1165,20 @@ def route_b1_live_arm(
     config: Path = typer.Argument(..., help="SWE-agent RunSingle JSON/YAML config."),
     output_dir: Path = typer.Option(..., "--output-dir", "-o", help="Evidence package directory."),
     arm_type: str = typer.Option("treatment", "--arm", help="control or treatment."),
-    protocol_path: Optional[Path] = typer.Option(None, "--protocol", help="Protocol B1 JSON (default: template)."),
+    protocol_path: Optional[Path] = typer.Option(
+        None, "--protocol", help="Protocol B1 JSON (default: template)."
+    ),
     source_task_id: Optional[str] = typer.Option(None, "--source-task-id"),
     pair_id: Optional[str] = typer.Option(None, "--pair-id"),
     problem_statement_file: Optional[Path] = typer.Option(
-        None, "--problem-statement-file", help="Issue text for the treatment payload (issue-text-only)."
+        None,
+        "--problem-statement-file",
+        help="Issue text for the treatment payload (issue-text-only).",
     ),
     gold_jsonl: Optional[Path] = typer.Option(
-        None, "--gold-jsonl", help="Gold rows; used ONLY as M2b leak refs (FAIL_TO_PASS/test_patch/patch). Never injected."
+        None,
+        "--gold-jsonl",
+        help="Gold rows; used ONLY as M2b leak refs (FAIL_TO_PASS/test_patch/patch). Never injected.",
     ),
     execute: bool = typer.Option(False, "--execute", help="Run the guarded live-single arm."),
     ack_docker: bool = typer.Option(False, "--ack-docker"),
@@ -1155,7 +1190,9 @@ def route_b1_live_arm(
     if arm_type not in {"control", "treatment"}:
         raise typer.BadParameter("--arm must be control or treatment")
     protocol = (
-        ProtocolB1.from_dict(json.loads(protocol_path.read_text())) if protocol_path else protocol_b1_template()
+        ProtocolB1.from_dict(json.loads(protocol_path.read_text()))
+        if protocol_path
+        else protocol_b1_template()
     )
     payload = None
     leak = B1LeakRefs()
@@ -1214,8 +1251,14 @@ def route_b1_live_arm(
 
 @app.command("route-b1-cells")
 def route_b1_cells_cmd(
-    arms_root: Path = typer.Argument(..., help="Root dir holding b1_live_arm_report.json files (arms/<anchor>/<arm>/rep_<n>/)."),
-    resolved_labels: Path = typer.Option(..., "--resolved-labels", help="JSONL {anchor,arm,rep,resolved} from official SWE-bench eval (STEP 6)."),
+    arms_root: Path = typer.Argument(
+        ..., help="Root dir holding b1_live_arm_report.json files (arms/<anchor>/<arm>/rep_<n>/)."
+    ),
+    resolved_labels: Path = typer.Option(
+        ...,
+        "--resolved-labels",
+        help="JSONL {anchor,arm,rep,resolved} from official SWE-bench eval (STEP 6).",
+    ),
     output_dir: Path = typer.Option(..., "--output-dir", "-o", help="Cells evidence directory."),
 ) -> None:
     """Offline: join each live-arm report's M-check provenance with its official-eval
@@ -1227,7 +1270,8 @@ def route_b1_cells_cmd(
     cells_path = output_dir / "b1_cells.jsonl"
     write_jsonl(cells_path, result["cells"])
     (output_dir / "b1_cells_report.json").write_text(
-        json.dumps({k: v for k, v in result.items() if k != "cells"}, ensure_ascii=False, indent=2) + "\n"
+        json.dumps({k: v for k, v in result.items() if k != "cells"}, ensure_ascii=False, indent=2)
+        + "\n"
     )
     _emit_json(
         {
@@ -1242,7 +1286,10 @@ def route_b1_cells_cmd(
 
 @app.command("route-b1-decision")
 def route_b1_decision_cmd(
-    cells: Path = typer.Argument(..., help="Per-cell outcomes JSONL {anchor,arm,resolved,injected_once,leak_clean,trigger_hit,injection_count}."),
+    cells: Path = typer.Argument(
+        ...,
+        help="Per-cell outcomes JSONL {anchor,arm,resolved,injected_once,leak_clean,trigger_hit,injection_count}.",
+    ),
     output_dir: Path = typer.Option(..., "--output-dir", "-o", help="Decision evidence directory."),
 ) -> None:
     """Offline: apply the frozen §5 preregistered decision over completed B1 cells.
@@ -1350,7 +1397,9 @@ def sweagent_protocol_v1_activate_runtime_config(
         "--native-output-dir",
         help="Arm-specific SWE-agent native output directory.",
     ),
-    model_name: Optional[str] = typer.Option(None, "--model-name", help="Override agent.model.name."),
+    model_name: Optional[str] = typer.Option(
+        None, "--model-name", help="Override agent.model.name."
+    ),
     api_base: Optional[str] = typer.Option(
         None,
         "--api-base",
@@ -1439,7 +1488,9 @@ def sweagent_protocol_v1_live_pair(
 ) -> None:
     """Combine two completed Protocol v1 live-single arms into a pair-level handoff."""
     if outcome_source not in {"not_provided", "operator_supplied", "official_eval"}:
-        raise typer.BadParameter("--outcome-source must be not_provided, operator_supplied, or official_eval")
+        raise typer.BadParameter(
+            "--outcome-source must be not_provided, operator_supplied, or official_eval"
+        )
     result = run_sweagent_protocol_v1_live_pair(
         spec=SWEAgentProtocolV1LivePairSpec(
             control_dir=control_dir,
@@ -1644,7 +1695,9 @@ def sweagent_protocol_v2_live_pair(
 ) -> None:
     """Combine two completed Protocol v2 live-single arms into a pair-level handoff."""
     if outcome_source not in {"not_provided", "operator_supplied", "official_eval"}:
-        raise typer.BadParameter("--outcome-source must be not_provided, operator_supplied, or official_eval")
+        raise typer.BadParameter(
+            "--outcome-source must be not_provided, operator_supplied, or official_eval"
+        )
     result = run_sweagent_protocol_v2_live_pair(
         spec=SWEAgentProtocolV2LivePairSpec(
             control_dir=control_dir,
@@ -1827,7 +1880,9 @@ def sweagent_live_single(
     replay_actions: Optional[Path] = typer.Option(
         None, "--replay-actions", help="Replay actions JSON/YAML list."
     ),
-    features: Optional[Path] = typer.Option(None, "--features", help="Live feature JSON/YAML mapping."),
+    features: Optional[Path] = typer.Option(
+        None, "--features", help="Live feature JSON/YAML mapping."
+    ),
     reference_capsule: Optional[Path] = typer.Option(
         None, "--reference-capsule", help="Control State Capsule JSON/YAML for treatment runs."
     ),
@@ -1901,7 +1956,9 @@ def sweagent_live_pair(
         ..., "--output-dir", "-o", help="Pair-level evidence package output directory."
     ),
     control_resolved: Optional[str] = typer.Option(
-        None, "--control-resolved", help="Optional control outcome: true/false or resolved/unresolved."
+        None,
+        "--control-resolved",
+        help="Optional control outcome: true/false or resolved/unresolved.",
     ),
     treatment_resolved: Optional[str] = typer.Option(
         None,
@@ -1921,7 +1978,9 @@ def sweagent_live_pair(
 ) -> None:
     """Combine two completed SWE-agent live arms into a pair-level outcome audit."""
     if outcome_source not in {"not_provided", "operator_supplied", "official_eval"}:
-        raise typer.BadParameter("--outcome-source must be not_provided, operator_supplied, or official_eval")
+        raise typer.BadParameter(
+            "--outcome-source must be not_provided, operator_supplied, or official_eval"
+        )
     result = run_sweagent_live_pair(
         spec=SWEAgentLivePairSpec(
             control_dir=control_dir,
@@ -2492,7 +2551,9 @@ def epsilon_estimate_cmd(
 
     estimates: dict[str, dict] = {}
     if outcomes is not None:
-        flags = [token.strip() in {"1", "true", "True"} for token in outcomes.split(",") if token.strip()]
+        flags = [
+            token.strip() in {"1", "true", "True"} for token in outcomes.split(",") if token.strip()
+        ]
         estimates[instance_id or "manual"] = flip_rate_estimate(
             flags, reference_outcome=reference_outcome
         )
@@ -2501,12 +2562,8 @@ def epsilon_estimate_cmd(
             typer.echo("--rerun-root requires --instance-id", err=True)
             raise typer.Exit(code=1)
         scanned = scan_rerun_outcomes(rerun_root, instance_id)
-        estimates[instance_id] = flip_rate_estimate(
-            scanned, reference_outcome=reference_outcome
-        )
-    inventory = (
-        [{"note": inventory_note}] if inventory_note else []
-    )
+        estimates[instance_id] = flip_rate_estimate(scanned, reference_outcome=reference_outcome)
+    inventory = [{"note": inventory_note}] if inventory_note else []
     result = write_epsilon_evidence(
         output_dir,
         estimates=estimates,
@@ -2620,14 +2677,10 @@ def oracle_probe_replay_free_prepare_cmd(
     from wutai_clinic.intervention.oracle_capsule import build_replay_free_variant_config
 
     base = json.loads(probe_config.read_text(encoding="utf-8"))
-    variant = build_replay_free_variant_config(
-        base, native_output_dir=output_dir / "native"
-    )
+    variant = build_replay_free_variant_config(base, native_output_dir=output_dir / "native")
     output_dir.mkdir(parents=True, exist_ok=True)
     config_path = output_dir / "oracle_probe_replay_free_runtime_config.json"
-    config_path.write_text(
-        json.dumps(variant, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    )
+    config_path.write_text(json.dumps(variant, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     _emit_json(
         {
             "config": str(config_path),
@@ -2748,7 +2801,9 @@ def oracle_probe_replay_free_outcome_cmd(
     evidence_root: Path = typer.Argument(..., help="Evidence root directory (read-only)."),
     source_task_id: str = typer.Option(..., "--source-task-id"),
     oracle_eval_report: Path = typer.Option(
-        ..., "--oracle-eval-report", help="swebench per-instance report.json of the replay-free arm."
+        ...,
+        "--oracle-eval-report",
+        help="swebench per-instance report.json of the replay-free arm.",
     ),
     replay_free_patch: Path = typer.Option(
         ..., "--replay-free-patch", help="Patch produced by the replay-free arm."
@@ -2796,9 +2851,7 @@ def _resolved_flag_from_eval_report(report_path: Path, instance_id: str) -> bool
     payload = json.loads(report_path.read_text(encoding="utf-8"))
     instance = payload.get(instance_id)
     if not isinstance(instance, dict) or "resolved" not in instance:
-        raise typer.BadParameter(
-            f"{report_path}: no resolved flag for instance {instance_id}"
-        )
+        raise typer.BadParameter(f"{report_path}: no resolved flag for instance {instance_id}")
     return bool(instance["resolved"])
 
 
@@ -2839,14 +2892,14 @@ def instrument_sensitivity_outcome_cmd(
         control = scan_rerun_outcomes(control_rerun_root, source_task_id)
         control_note = f"scanned from {control_rerun_root.as_posix()}"
     elif control_outcomes is not None:
-        control = [t.strip() in {"1", "true", "True"} for t in control_outcomes.split(",") if t.strip()]
+        control = [
+            t.strip() in {"1", "true", "True"} for t in control_outcomes.split(",") if t.strip()
+        ]
         control_note = "supplied via --control-outcomes"
     else:
         raise typer.BadParameter("provide --control-rerun-root or --control-outcomes")
 
-    treatment = [
-        _resolved_flag_from_eval_report(p, source_task_id) for p in treatment_eval_report
-    ]
+    treatment = [_resolved_flag_from_eval_report(p, source_task_id) for p in treatment_eval_report]
 
     result = write_instrument_sensitivity_evidence(
         output_dir,

@@ -183,9 +183,7 @@ def _coalesced_rows(
             continue
         best_index, best_row = max(rows, key=lambda item: (_candidate_quality(item[1]), -item[0]))
         merged = {
-            key: value
-            for key, value in best_row.items()
-            if key in MERGE_KEYS and _has_value(value)
+            key: value for key, value in best_row.items() if key in MERGE_KEYS and _has_value(value)
         }
         for _index, row in sorted(
             rows,
@@ -334,9 +332,7 @@ def select_protocol_v2_fresh_candidates(
     ]
     sorted_rows = [
         row
-        for _key, row in sorted(
-            (_rank_key(row, index), row) for index, row in enumerate(coalesced)
-        )
+        for _key, row in sorted((_rank_key(row, index), row) for index, row in enumerate(coalesced))
     ]
     for row in sorted_rows:
         if row.get("selection_role") != "failure_target":
@@ -346,7 +342,9 @@ def select_protocol_v2_fresh_candidates(
             excluded_rows.append(_excluded_candidate(row, reason="selection_status_not_eligible"))
             continue
         if _is_used(row, used_pairs=used_pairs):
-            excluded_rows.append(_excluded_candidate(row, reason="official_eval_completed_contaminated"))
+            excluded_rows.append(
+                _excluded_candidate(row, reason="official_eval_completed_contaminated")
+            )
             continue
         if _is_used(row, used_pairs=known_mismatches):
             excluded_rows.append(
@@ -355,7 +353,9 @@ def select_protocol_v2_fresh_candidates(
             continue
         materialized = _materialized_inputs(row, pair_input_roots=pair_input_roots)
         if not materialized:
-            excluded_rows.append(_excluded_candidate(row, reason="materialized_pair_inputs_missing"))
+            excluded_rows.append(
+                _excluded_candidate(row, reason="materialized_pair_inputs_missing")
+            )
             continue
         if not materialized["replay_actions_path"].is_file():
             excluded_rows.append(_excluded_candidate(row, reason="replay_actions_missing"))
@@ -468,9 +468,8 @@ def protocol_v2_fresh_candidate_report(
                 for row in fresh_rows
             ],
             "continuation_policy": {
-                "allow_protocol_v2_planned_preflight": bool(fresh_rows) and gates[
-                    "protocol_v2_dry_run_ready"
-                ],
+                "allow_protocol_v2_planned_preflight": bool(fresh_rows)
+                and gates["protocol_v2_dry_run_ready"],
                 "allow_protocol_v2_real_run": False,
                 "allow_same_pair_positive_claim": False,
                 "allow_official_eval_identifier_runtime_injection": False,

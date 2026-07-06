@@ -2,6 +2,7 @@
 
 All fixtures are synthetic (no real artifact directories are read).
 """
+
 from __future__ import annotations
 
 import ast
@@ -116,7 +117,10 @@ def evidence_pending(tmp_path: Path) -> Path:
 def evidence_preflight_ready(tmp_path: Path) -> Path:
     sid = "fake__task-1"
     _write_json(
-        tmp_path / "protocol_v2_planned_preflight" / sid / "protocol_v2_planned_preflight_report.json",
+        tmp_path
+        / "protocol_v2_planned_preflight"
+        / sid
+        / "protocol_v2_planned_preflight_report.json",
         _preflight_report(passed=True),
     )
     return tmp_path
@@ -127,7 +131,10 @@ def evidence_awaiting_control(tmp_path: Path) -> Path:
     """Preflight passed with the canonical decision string."""
     sid = "fake__task-1"
     _write_json(
-        tmp_path / "protocol_v2_planned_preflight" / sid / "protocol_v2_planned_preflight_report.json",
+        tmp_path
+        / "protocol_v2_planned_preflight"
+        / sid
+        / "protocol_v2_planned_preflight_report.json",
         {
             "decision": "protocol_v2_planned_preflight_ready_live_execution_not_authorized",
             "passed": True,
@@ -141,12 +148,22 @@ def evidence_awaiting_treatment(tmp_path: Path) -> Path:
     sid = "fake__task-1"
     # Preflight
     _write_json(
-        tmp_path / "protocol_v2_planned_preflight" / sid / "protocol_v2_planned_preflight_report.json",
-        {"decision": "protocol_v2_planned_preflight_ready_live_execution_not_authorized", "passed": True},
+        tmp_path
+        / "protocol_v2_planned_preflight"
+        / sid
+        / "protocol_v2_planned_preflight_report.json",
+        {
+            "decision": "protocol_v2_planned_preflight_ready_live_execution_not_authorized",
+            "passed": True,
+        },
     )
     # Control arm complete
     _write_json(
-        tmp_path / "protocol_v2_live_single_executed" / sid / "control" / "protocol_v2_live_single_report.json",
+        tmp_path
+        / "protocol_v2_live_single_executed"
+        / sid
+        / "control"
+        / "protocol_v2_live_single_report.json",
         _live_single_report("control", completed=True),
     )
     return tmp_path
@@ -156,11 +173,19 @@ def evidence_awaiting_treatment(tmp_path: Path) -> Path:
 def evidence_treatment_complete(tmp_path: Path) -> Path:
     sid = "fake__task-1"
     _write_json(
-        tmp_path / "protocol_v2_live_single_executed" / sid / "control" / "protocol_v2_live_single_report.json",
+        tmp_path
+        / "protocol_v2_live_single_executed"
+        / sid
+        / "control"
+        / "protocol_v2_live_single_report.json",
         _live_single_report("control", completed=True),
     )
     _write_json(
-        tmp_path / "protocol_v2_live_single_executed" / sid / "treatment" / "protocol_v2_live_single_report.json",
+        tmp_path
+        / "protocol_v2_live_single_executed"
+        / sid
+        / "treatment"
+        / "protocol_v2_live_single_report.json",
         _live_single_report("treatment", completed=True),
     )
     return tmp_path
@@ -214,7 +239,10 @@ def test_state_preflight_ready(tmp_path: Path) -> None:
     sid = "fake__task-1"
     # Use a decision that is truthy/passed but NOT the canonical one
     _write_json(
-        tmp_path / "protocol_v2_planned_preflight" / sid / "protocol_v2_planned_preflight_report.json",
+        tmp_path
+        / "protocol_v2_planned_preflight"
+        / sid
+        / "protocol_v2_planned_preflight_report.json",
         {"decision": "protocol_v2_planned_preflight_ready_some_other_variant", "passed": True},
     )
     entry = _pair_entry(source_task_id=sid, evidence_root=tmp_path)
@@ -228,7 +256,9 @@ def test_state_awaiting_control_authorization(evidence_awaiting_control: Path) -
 
 def test_state_awaiting_treatment_authorization(evidence_awaiting_treatment: Path) -> None:
     entry = _pair_entry(evidence_root=evidence_awaiting_treatment)
-    assert infer_pair_state(entry, evidence_awaiting_treatment) == "awaiting_treatment_authorization"
+    assert (
+        infer_pair_state(entry, evidence_awaiting_treatment) == "awaiting_treatment_authorization"
+    )
 
 
 def test_state_treatment_complete(evidence_treatment_complete: Path) -> None:
@@ -246,7 +276,10 @@ def test_state_pair_assembled(evidence_pair_assembled: Path) -> None:
 
 def test_state_awaiting_official_eval(evidence_awaiting_official_eval: Path) -> None:
     entry = _pair_entry(evidence_root=evidence_awaiting_official_eval)
-    assert infer_pair_state(entry, evidence_awaiting_official_eval) == "awaiting_official_eval_authorization"
+    assert (
+        infer_pair_state(entry, evidence_awaiting_official_eval)
+        == "awaiting_official_eval_authorization"
+    )
 
 
 def test_state_official_eval_complete(evidence_official_eval_complete: Path) -> None:
@@ -257,7 +290,10 @@ def test_state_official_eval_complete(evidence_official_eval_complete: Path) -> 
 def test_state_failed_preflight(tmp_path: Path) -> None:
     sid = "fake__task-1"
     _write_json(
-        tmp_path / "protocol_v2_planned_preflight" / sid / "protocol_v2_planned_preflight_report.json",
+        tmp_path
+        / "protocol_v2_planned_preflight"
+        / sid
+        / "protocol_v2_planned_preflight_report.json",
         {"decision": "protocol_v2_planned_preflight_blocked", "passed": False},
     )
     entry = _pair_entry(evidence_root=tmp_path)
@@ -267,7 +303,11 @@ def test_state_failed_preflight(tmp_path: Path) -> None:
 def test_state_failed_control(tmp_path: Path) -> None:
     sid = "fake__task-1"
     _write_json(
-        tmp_path / "protocol_v2_live_single_executed" / sid / "control" / "protocol_v2_live_single_report.json",
+        tmp_path
+        / "protocol_v2_live_single_executed"
+        / sid
+        / "control"
+        / "protocol_v2_live_single_report.json",
         _live_single_report("control", completed=False),
     )
     entry = _pair_entry(evidence_root=tmp_path)
@@ -277,11 +317,19 @@ def test_state_failed_control(tmp_path: Path) -> None:
 def test_state_failed_treatment(tmp_path: Path) -> None:
     sid = "fake__task-1"
     _write_json(
-        tmp_path / "protocol_v2_live_single_executed" / sid / "control" / "protocol_v2_live_single_report.json",
+        tmp_path
+        / "protocol_v2_live_single_executed"
+        / sid
+        / "control"
+        / "protocol_v2_live_single_report.json",
         _live_single_report("control", completed=True),
     )
     _write_json(
-        tmp_path / "protocol_v2_live_single_executed" / sid / "treatment" / "protocol_v2_live_single_report.json",
+        tmp_path
+        / "protocol_v2_live_single_executed"
+        / sid
+        / "treatment"
+        / "protocol_v2_live_single_report.json",
         _live_single_report("treatment", completed=False),
     )
     entry = _pair_entry(evidence_root=tmp_path)
@@ -382,11 +430,19 @@ def test_advance_batch_only_offline_steps_called(tmp_path: Path) -> None:
     evidence_root = tmp_path / "evidence"
     # Set up treatment_complete so pair assembly runs offline
     _write_json(
-        evidence_root / "protocol_v2_live_single_executed" / sid / "control" / "protocol_v2_live_single_report.json",
+        evidence_root
+        / "protocol_v2_live_single_executed"
+        / sid
+        / "control"
+        / "protocol_v2_live_single_report.json",
         _live_single_report("control", completed=True),
     )
     _write_json(
-        evidence_root / "protocol_v2_live_single_executed" / sid / "treatment" / "protocol_v2_live_single_report.json",
+        evidence_root
+        / "protocol_v2_live_single_executed"
+        / sid
+        / "treatment"
+        / "protocol_v2_live_single_report.json",
         _live_single_report("treatment", completed=True),
     )
 
@@ -398,7 +454,12 @@ def test_advance_batch_only_offline_steps_called(tmp_path: Path) -> None:
     result = advance_batch(spec, state_dir, command_runner=rec)
 
     # Verify no forbidden kwargs in any recorded call
-    forbidden = {"ack_docker": True, "ack_external_provider": True, "ack_official_eval": True, "run_official_eval": True}
+    forbidden = {
+        "ack_docker": True,
+        "ack_external_provider": True,
+        "ack_official_eval": True,
+        "run_official_eval": True,
+    }
     for call in rec.calls:
         for key, val in forbidden.items():
             assert call["kwargs"].get(key) is not True, (
@@ -427,8 +488,14 @@ def test_advance_batch_awaiting_states_produce_operator_actions(tmp_path: Path) 
     evidence_root = tmp_path / "evidence"
     # Awaiting control authorization
     _write_json(
-        evidence_root / "protocol_v2_planned_preflight" / sid / "protocol_v2_planned_preflight_report.json",
-        {"decision": "protocol_v2_planned_preflight_ready_live_execution_not_authorized", "passed": True},
+        evidence_root
+        / "protocol_v2_planned_preflight"
+        / sid
+        / "protocol_v2_planned_preflight_report.json",
+        {
+            "decision": "protocol_v2_planned_preflight_ready_live_execution_not_authorized",
+            "passed": True,
+        },
     )
     pair = _pair_entry(source_task_id=sid, evidence_root=evidence_root)
     spec = _batch_spec(evidence_root, [pair])
@@ -446,7 +513,11 @@ def test_operator_actions_treatment_contains_correct_flags(tmp_path: Path) -> No
     sid = "fake__task-1"
     evidence_root = tmp_path / "evidence"
     _write_json(
-        evidence_root / "protocol_v2_live_single_executed" / sid / "control" / "protocol_v2_live_single_report.json",
+        evidence_root
+        / "protocol_v2_live_single_executed"
+        / sid
+        / "control"
+        / "protocol_v2_live_single_report.json",
         _live_single_report("control", completed=True),
     )
     pair = _pair_entry(source_task_id=sid, evidence_root=evidence_root)
@@ -488,8 +559,14 @@ def test_self_healing_state_rebuild(tmp_path: Path) -> None:
     sid = "fake__task-1"
     evidence_root = tmp_path / "evidence"
     _write_json(
-        evidence_root / "protocol_v2_planned_preflight" / sid / "protocol_v2_planned_preflight_report.json",
-        {"decision": "protocol_v2_planned_preflight_ready_live_execution_not_authorized", "passed": True},
+        evidence_root
+        / "protocol_v2_planned_preflight"
+        / sid
+        / "protocol_v2_planned_preflight_report.json",
+        {
+            "decision": "protocol_v2_planned_preflight_ready_live_execution_not_authorized",
+            "passed": True,
+        },
     )
     pair = _pair_entry(source_task_id=sid, evidence_root=evidence_root)
     spec = _batch_spec(evidence_root, [pair])
@@ -536,8 +613,14 @@ def test_failed_control_retry(tmp_path: Path) -> None:
 
     # Add a good preflight
     _write_json(
-        evidence_root / "protocol_v2_planned_preflight" / sid / "protocol_v2_planned_preflight_report.json",
-        {"decision": "protocol_v2_planned_preflight_ready_live_execution_not_authorized", "passed": True},
+        evidence_root
+        / "protocol_v2_planned_preflight"
+        / sid
+        / "protocol_v2_planned_preflight_report.json",
+        {
+            "decision": "protocol_v2_planned_preflight_ready_live_execution_not_authorized",
+            "passed": True,
+        },
     )
 
     state_after = infer_pair_state(pair, evidence_root)
@@ -548,7 +631,11 @@ def test_failed_treatment_retry(tmp_path: Path) -> None:
     sid = "fake__task-1"
     evidence_root = tmp_path / "evidence"
     _write_json(
-        evidence_root / "protocol_v2_live_single_executed" / sid / "control" / "protocol_v2_live_single_report.json",
+        evidence_root
+        / "protocol_v2_live_single_executed"
+        / sid
+        / "control"
+        / "protocol_v2_live_single_report.json",
         _live_single_report("control", completed=True),
     )
     treatment_report = (
@@ -579,8 +666,14 @@ def test_batch_status_read_only(tmp_path: Path) -> None:
     sid = "fake__task-1"
     evidence_root = tmp_path / "evidence"
     _write_json(
-        evidence_root / "protocol_v2_planned_preflight" / sid / "protocol_v2_planned_preflight_report.json",
-        {"decision": "protocol_v2_planned_preflight_ready_live_execution_not_authorized", "passed": True},
+        evidence_root
+        / "protocol_v2_planned_preflight"
+        / sid
+        / "protocol_v2_planned_preflight_report.json",
+        {
+            "decision": "protocol_v2_planned_preflight_ready_live_execution_not_authorized",
+            "passed": True,
+        },
     )
     pair = _pair_entry(source_task_id=sid, evidence_root=evidence_root)
     spec = _batch_spec(evidence_root, [pair])
@@ -658,6 +751,7 @@ def _write_batch_spec(path: Path, spec: dict[str, Any]) -> None:
 # from cli_patch_task6, then invoke it through CliRunner.
 # ---------------------------------------------------------------------------
 
+
 def _make_test_app() -> Any:
     """Return a single-command Typer app for batch-orchestrate.
 
@@ -682,10 +776,18 @@ def _make_test_app() -> Any:
     ) -> None:
         spec = json.loads(batch_spec.read_text(encoding="utf-8"))
         if status and not advance:
-            _typer.echo(json.dumps(_batch_status(spec, state_dir), ensure_ascii=False, indent=2, sort_keys=True))
+            _typer.echo(
+                json.dumps(
+                    _batch_status(spec, state_dir), ensure_ascii=False, indent=2, sort_keys=True
+                )
+            )
             return
         if advance:
-            _typer.echo(json.dumps(_advance_batch(spec, state_dir), ensure_ascii=False, indent=2, sort_keys=True))
+            _typer.echo(
+                json.dumps(
+                    _advance_batch(spec, state_dir), ensure_ascii=False, indent=2, sort_keys=True
+                )
+            )
             return
         _typer.echo("Specify --status or --advance.", err=True)
         raise _typer.Exit(code=1)

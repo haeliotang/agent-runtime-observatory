@@ -78,7 +78,9 @@ class ProtocolB1InjectionHook:
             self.captured_traceback = cap.traceback
         except Exception as exc:  # pragma: no cover - live container failure path
             self.captured_traceback = None
-            self.audit_events.append(self._event(event="protocol_b1_capture_error", injected=False, error=str(exc)[:200]))
+            self.audit_events.append(
+                self._event(event="protocol_b1_capture_error", injected=False, error=str(exc)[:200])
+            )
         payload = {
             "instance_id": self.source_task_id,
             "info_kind": self.protocol.action.info_kind,
@@ -90,12 +92,19 @@ class ProtocolB1InjectionHook:
         #    On leak, record + skip injection (do NOT raise — SWE-agent may swallow it;
         #    the adapter reads capture_leak_findings after the run and voids the arm).
         self.capture_leak_findings = b1_payload_leak_scan(
-            payload, fail_to_pass=self.fail_to_pass, test_patch=self.test_patch, gold_patch=self.gold_patch
+            payload,
+            fail_to_pass=self.fail_to_pass,
+            test_patch=self.test_patch,
+            gold_patch=self.gold_patch,
         )
         self.payload = payload
         if self.capture_leak_findings:
             self.audit_events.append(
-                self._event(event="protocol_b1_capture_leak_void", injected=False, findings=self.capture_leak_findings)
+                self._event(
+                    event="protocol_b1_capture_leak_void",
+                    injected=False,
+                    findings=self.capture_leak_findings,
+                )
             )
             return
         # 3) inject once
@@ -131,17 +140,38 @@ class ProtocolB1InjectionHook:
         return payload
 
     # --- inert SWE-agent hook surface ----------------------------------------
-    def on_run_start(self) -> None: return None
-    def on_step_start(self) -> None: return None
-    def on_action_started(self, *, step: Any) -> None: return None
-    def on_actions_generated(self, *, step: Any) -> None: return None
-    def on_action_executed(self, *, step: Any) -> None: return None
-    def on_step_done(self, *, step: Any, info: Any) -> None: return None
-    def on_run_done(self, *, trajectory: Any, info: Any) -> None: return None
-    def on_setup_attempt(self) -> None: return None
-    def on_setup_done(self) -> None: return None
-    def on_tools_installation_started(self) -> None: return None
-    def on_query_message_added(self, **kwargs: Any) -> None: return None
+    def on_run_start(self) -> None:
+        return None
+
+    def on_step_start(self) -> None:
+        return None
+
+    def on_action_started(self, *, step: Any) -> None:
+        return None
+
+    def on_actions_generated(self, *, step: Any) -> None:
+        return None
+
+    def on_action_executed(self, *, step: Any) -> None:
+        return None
+
+    def on_step_done(self, *, step: Any, info: Any) -> None:
+        return None
+
+    def on_run_done(self, *, trajectory: Any, info: Any) -> None:
+        return None
+
+    def on_setup_attempt(self) -> None:
+        return None
+
+    def on_setup_done(self) -> None:
+        return None
+
+    def on_tools_installation_started(self) -> None:
+        return None
+
+    def on_query_message_added(self, **kwargs: Any) -> None:
+        return None
 
 
 __all__ = ["B1Injector", "ProtocolB1InjectionHook", "ProtocolB1InjectionVoid", "ReproExecutor"]

@@ -55,8 +55,7 @@ def take_snapshot(
         )
     manifest = {
         "label": label,
-        "taken_at": taken_at
-        or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "taken_at": taken_at or datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "entries": entries,
     }
     (snapshot_dir / SNAPSHOT_MANIFEST).write_text(
@@ -83,11 +82,7 @@ def verify_snapshot(
     mismatched: list[str] = []
     missing: list[str] = []
     for entry in manifest["entries"]:
-        target = (
-            Path(entry["source_path"])
-            if against_live
-            else snapshot_dir / entry["stored_name"]
-        )
+        target = Path(entry["source_path"]) if against_live else snapshot_dir / entry["stored_name"]
         if not target.is_file():
             missing.append(target.as_posix())
         elif _sha256(target) != entry["sha256"]:
@@ -107,9 +102,7 @@ def restore_snapshot(snapshot_dir: Path) -> dict[str, Any]:
     integrity = verify_snapshot(snapshot_dir, against_live=False)
     if not integrity["ok"]:
         raise RuntimeError(f"snapshot corrupted; refusing to restore: {integrity}")
-    manifest = json.loads(
-        (snapshot_dir / SNAPSHOT_MANIFEST).read_text(encoding="utf-8")
-    )
+    manifest = json.loads((snapshot_dir / SNAPSHOT_MANIFEST).read_text(encoding="utf-8"))
     for entry in manifest["entries"]:
         shutil.copy2(snapshot_dir / entry["stored_name"], Path(entry["source_path"]))
     proof = verify_snapshot(snapshot_dir, against_live=True)

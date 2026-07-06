@@ -19,6 +19,7 @@ from wutai_clinic.intervention.paired_fork import run_paired_fork_dry_run  # noq
 
 UTC = timezone.utc  # py3.10 compat: datetime.UTC is 3.11+
 
+
 def parse_optional_bool(value: str | None) -> bool | None:
     if value is None:
         return None
@@ -29,9 +30,11 @@ def parse_optional_bool(value: str | None) -> bool | None:
         return False
     raise argparse.ArgumentTypeError("expected true/false or resolved/unresolved")
 
+
 def default_output_dir() -> Path:
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     return Path(tempfile.gettempdir()) / f"wutai-paired-fork-dry-run-{stamp}"
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -66,6 +69,7 @@ def main() -> None:
         "events": str(result["events_path"]),
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2, sort_keys=True))
+
 
 if __name__ == "__main__":
     main()

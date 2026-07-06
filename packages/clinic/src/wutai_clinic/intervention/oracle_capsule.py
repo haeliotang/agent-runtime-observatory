@@ -257,9 +257,7 @@ def write_oracle_probe_prepare_evidence(
         },
     )
     report_path = output_dir / "oracle_probe_prepare_report.json"
-    report_path.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    )
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     manifest = generate_manifest(
         phase=ORACLE_PROBE_PHASE,
         report=report,
@@ -301,9 +299,7 @@ def write_oracle_probe_outcome_evidence(
         root / "protocol_v2_official_eval" / source_task_id / "protocol_v2_dual_scorecard.json"
     )
     scorecard = (
-        json.loads(scorecard_path.read_text(encoding="utf-8"))
-        if scorecard_path.is_file()
-        else {}
+        json.loads(scorecard_path.read_text(encoding="utf-8")) if scorecard_path.is_file() else {}
     )
     oracle_resolved: bool | None = None
     if oracle_eval_report_path.is_file():
@@ -353,9 +349,7 @@ def write_oracle_probe_outcome_evidence(
         },
     )
     report_path = output_dir / "oracle_probe_outcome_report.json"
-    report_path.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    )
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     manifest = generate_manifest(
         phase=ORACLE_PROBE_PHASE,
         report=report,
@@ -422,9 +416,7 @@ def classify_replay_free_probe(
     if patch_text is not None and gold_patch_text:
         overlap = gold_file_overlap(patch_text, gold_patch_text)
         distance = normalized_edit_distance(patch_text, gold_patch_text)
-        near_gold = bool(
-            overlap["hit_any_gold_file"] and distance < REPLAY_FREE_NEAR_GOLD_DISTANCE
-        )
+        near_gold = bool(overlap["hit_any_gold_file"] and distance < REPLAY_FREE_NEAR_GOLD_DISTANCE)
         proximity = {
             "gold_file_overlap": overlap,
             "gold_edit_distance": distance,
@@ -509,9 +501,7 @@ def write_oracle_probe_replay_free_outcome_evidence(
         },
     )
     report_path = output_dir / "oracle_probe_outcome_report.json"
-    report_path.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
-    )
+    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
     manifest = generate_manifest(
         phase=ORACLE_PROBE_PHASE,
         report=report,

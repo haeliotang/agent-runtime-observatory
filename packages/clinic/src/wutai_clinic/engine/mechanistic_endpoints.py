@@ -157,14 +157,14 @@ def _artifact(path: Path) -> dict[str, Any]:
 
 def _load_fresh_candidate_task_ids(root: Path) -> set[str]:
     fresh_list = (
-        root / "protocol_v2_fresh_candidate_gate" / "protocol_v2_fresh_candidate_set_candidates.jsonl"
+        root
+        / "protocol_v2_fresh_candidate_gate"
+        / "protocol_v2_fresh_candidate_set_candidates.jsonl"
     )
     if not fresh_list.is_file():
         return set()
     return {
-        str(row["source_task_id"])
-        for row in read_jsonl(fresh_list)
-        if row.get("source_task_id")
+        str(row["source_task_id"]) for row in read_jsonl(fresh_list) if row.get("source_task_id")
     }
 
 
@@ -287,9 +287,7 @@ def build_mechanistic_rows(
         patches: dict[str, str | None] = {}
         actions: dict[str, list[str] | None] = {}
         for arm in ("control", "treatment"):
-            payload, arm_missing, patch_text, arm_actions = _arm_endpoints(
-                root, task_id, arm, gold
-            )
+            payload, arm_missing, patch_text, arm_actions = _arm_endpoints(root, task_id, arm, gold)
             arms[arm] = payload
             patches[arm] = patch_text
             actions[arm] = arm_actions

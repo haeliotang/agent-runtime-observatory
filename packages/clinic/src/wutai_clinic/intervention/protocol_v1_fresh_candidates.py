@@ -190,8 +190,7 @@ def select_protocol_v1_fresh_candidates(
             for row in fresh_rows
         ),
         "fresh_refs_block_same_pair_posthoc_claims": all(
-            row.get("same_pair_posthoc_positive_claim_allowed") is False
-            for row in fresh_rows
+            row.get("same_pair_posthoc_positive_claim_allowed") is False for row in fresh_rows
         ),
         "candidate_payload_has_no_raw_payload_keys": no_raw_payload(
             {"fresh_rows": fresh_rows, "excluded_rows": excluded_rows}
@@ -265,10 +264,10 @@ def protocol_v1_fresh_candidate_report(
                     "source_task_id": row["source_task_id"],
                     "selection_role": row["selection_role"],
                     "intervention_policy_id": row["intervention_policy_id"],
-                "candidate_prefix_index": row["candidate_prefix_index"],
-                "candidate_static_prefix_index": row["candidate_static_prefix_index"],
-                "replay_risk_level": row["replay_risk_level"],
-            }
+                    "candidate_prefix_index": row["candidate_prefix_index"],
+                    "candidate_static_prefix_index": row["candidate_static_prefix_index"],
+                    "replay_risk_level": row["replay_risk_level"],
+                }
                 for row in fresh_rows
             ],
             "excluded_candidates": excluded_rows,
@@ -291,7 +290,9 @@ def protocol_v1_fresh_candidate_report(
         },
     )
     report["passed"] = has_fresh_candidate and not [
-        name for name, passed in gates.items() if not passed and name != "at_least_one_fresh_candidate"
+        name
+        for name, passed in gates.items()
+        if not passed and name != "at_least_one_fresh_candidate"
     ]
     if not has_fresh_candidate:
         report["passed"] = False

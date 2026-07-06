@@ -8,8 +8,10 @@ from typing import Any
 
 UTC = timezone.utc  # py3.10 compat: datetime.UTC is 3.11+
 
+
 def utc_now() -> str:
     return datetime.now(UTC).isoformat(timespec="seconds")
+
 
 def sha256_file(path: str | Path) -> str:
     digest = hashlib.sha256()
@@ -18,12 +20,14 @@ def sha256_file(path: str | Path) -> str:
             digest.update(chunk)
     return digest.hexdigest()
 
+
 def _record_count(path: str | Path) -> int | None:
     target = Path(path)
     if target.suffix != ".jsonl" or not target.is_file():
         return None
     with target.open("rb") as handle:
         return sum(1 for line in handle if line.strip())
+
 
 def _artifact_entry(path: str | Path) -> dict[str, Any]:
     target = Path(path)
@@ -32,6 +36,7 @@ def _artifact_entry(path: str | Path) -> dict[str, Any]:
         "sha256": sha256_file(target) if target.is_file() else None,
         "record_count": _record_count(target),
     }
+
 
 def generate_report(
     *,
@@ -65,6 +70,7 @@ def generate_report(
     if extras:
         report.update(extras)
     return report
+
 
 def generate_manifest(
     *,

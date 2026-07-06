@@ -132,7 +132,6 @@ def message_prefix_hash(messages: list[dict[str, Any]]) -> str:
     return stable_json_hash([_canonical_message(message) for message in messages])
 
 
-
 def normalize_model_output(action: dict[str, Any] | str) -> dict[str, Any]:
     if isinstance(action, str):
         return {"message": action}

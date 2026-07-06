@@ -145,7 +145,9 @@ REPORT_PATTERNS = (
 class EvidenceIndexRow:
     instance_id: str
     pair_id: str
-    protocol_stratum: str  # v0_reference | v1_fresh | v2_strict_fresh | v2_reference | v2_oracle_probe
+    protocol_stratum: (
+        str  # v0_reference | v1_fresh | v2_strict_fresh | v2_reference | v2_oracle_probe
+    )
     effect_label: str
     trajectory_class: str
     status: str  # official_eval_completed | materialized_not_executed | planned_only | unparsed
@@ -457,7 +459,9 @@ def scan_evidence_root(root: Path) -> list[EvidenceIndexRow]:
                 )
                 continue
 
-            instance_id = str(data.get("source_task_id") or "") or _instance_id_from_path(report_path)
+            instance_id = str(data.get("source_task_id") or "") or _instance_id_from_path(
+                report_path
+            )
             pair_id = str(data.get("pair_id") or "")
             effect_label = str(data.get("effect_label") or "")
             trajectory_class = _trajectory_class_from_report(data)
@@ -466,7 +470,11 @@ def scan_evidence_root(root: Path) -> list[EvidenceIndexRow]:
 
             stratum, lineage_note = _classify_stratum(instance_id, report_path, fresh_gate_ids)
             # Propagate missing gate note for v2 strata when gate file unavailable
-            if not lineage_note and fresh_gate_note and stratum in ("v2_strict_fresh", "v2_reference"):
+            if (
+                not lineage_note
+                and fresh_gate_note
+                and stratum in ("v2_strict_fresh", "v2_reference")
+            ):
                 lineage_note = fresh_gate_note
 
             # official_eval_completed check
@@ -588,6 +596,7 @@ def build_index_summary(rows: list[EvidenceIndexRow]) -> dict[str, Any]:
 def _utc_now() -> str:
     """Return current UTC time as ISO-8601 string (Python 3.9+ compatible)."""
     import datetime as _dt
+
     # timezone.utc works in Python 3.2+
     return _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds")
 

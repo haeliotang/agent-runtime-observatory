@@ -151,8 +151,7 @@ def protocol_v1_hook_preflight_gates(
         ),
         "plan_decision_expected": plan.get("decision") == EXPECTED_PLAN_DECISION,
         "pairs_present": len(pairs) > 0,
-        "events_cover_all_pairs": len({event.get("row_index") for event in events})
-        == len(pairs),
+        "events_cover_all_pairs": len({event.get("row_index") for event in events}) == len(pairs),
         "hook_events_present": len(events) > 0,
         "edit_before_failure_blocked_for_targeted": _event_count(
             events,
@@ -186,7 +185,9 @@ def protocol_v1_hook_preflight_gates(
             for event in events
         ),
         "official_eval_identifiers_not_runtime_visible": bool(events)
-        and all(event.get("official_eval_identifiers_runtime_visible") is False for event in events),
+        and all(
+            event.get("official_eval_identifiers_runtime_visible") is False for event in events
+        ),
         "raw_payload_logging_disabled": bool(events)
         and all(event["raw_payload_logged"] is False for event in events),
     }

@@ -60,9 +60,7 @@ def _safe_read_rows(path: Path) -> list[dict[str, Any]]:
     if not path.is_file():
         return []
     return [
-        json.loads(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
+        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
     ]
 
 
@@ -171,8 +169,10 @@ def protocol_v2_planned_preflight_report(
         "candidate_set_decision_allows_preflight": candidate_set_report.get("decision")
         in EXPECTED_CANDIDATE_DECISIONS,
         "candidate_is_failure_target": candidate.get("selection_role") == "failure_target",
-        "candidate_not_authorized_for_live_run": candidate.get("phase6_live_pair_authorized") is False,
-        "candidate_not_authorized_for_official_eval": candidate.get("official_eval_authorized") is False,
+        "candidate_not_authorized_for_live_run": candidate.get("phase6_live_pair_authorized")
+        is False,
+        "candidate_not_authorized_for_official_eval": candidate.get("official_eval_authorized")
+        is False,
         "candidate_blocks_same_pair_positive_claim": (
             candidate.get("same_pair_posthoc_positive_claim_allowed") is False
         ),

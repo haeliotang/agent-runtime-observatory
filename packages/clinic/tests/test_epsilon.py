@@ -164,9 +164,15 @@ def test_scan_rerun_outcomes_wrong_instance_skipped(tmp_path: Path) -> None:
 
 def test_write_epsilon_evidence_full(tmp_path: Path) -> None:
     estimates = {
-        "flask-4045": {"rerun_count": 3, "flip_count": 0, "reference_outcome": False,
-                       "point_estimate": 0.0, "wilson_lower_95": 0.0,
-                       "wilson_upper_95": 0.562, "confidence": 0.95},
+        "flask-4045": {
+            "rerun_count": 3,
+            "flip_count": 0,
+            "reference_outcome": False,
+            "point_estimate": 0.0,
+            "wilson_lower_95": 0.0,
+            "wilson_upper_95": 0.562,
+            "confidence": 0.95,
+        },
     }
     result = write_epsilon_evidence(tmp_path / "out", estimates=estimates)
     report = result["report"]
@@ -188,9 +194,15 @@ def test_write_epsilon_evidence_no_outcomes_blocked(tmp_path: Path) -> None:
 def test_write_epsilon_evidence_target_below_floor_annotated(tmp_path: Path) -> None:
     # point_estimate = 0.0 from 3 all-stable reruns → target 0.05 is not below floor (eps=0)
     estimates = {
-        "inst": {"rerun_count": 3, "flip_count": 0, "reference_outcome": False,
-                 "point_estimate": 0.0, "wilson_lower_95": 0.0,
-                 "wilson_upper_95": 0.562, "confidence": 0.95},
+        "inst": {
+            "rerun_count": 3,
+            "flip_count": 0,
+            "reference_outcome": False,
+            "point_estimate": 0.0,
+            "wilson_lower_95": 0.0,
+            "wilson_upper_95": 0.562,
+            "confidence": 0.95,
+        },
     }
     result = write_epsilon_evidence(
         tmp_path / "out",
@@ -214,9 +226,12 @@ def test_cli_epsilon_estimate_manual_outcomes(tmp_path: Path) -> None:
         app,
         [
             "epsilon-estimate",
-            "--outcomes", "0,0,0",
-            "--instance-id", "pkg__repo-1",
-            "--output-dir", str(out),
+            "--outcomes",
+            "0,0,0",
+            "--instance-id",
+            "pkg__repo-1",
+            "--output-dir",
+            str(out),
         ],
     )
     assert result.exit_code == 0, result.output
@@ -240,9 +255,12 @@ def test_cli_epsilon_estimate_rerun_root(tmp_path: Path) -> None:
         app,
         [
             "epsilon-estimate",
-            "--rerun-root", str(rerun_root),
-            "--instance-id", instance,
-            "--output-dir", str(out),
+            "--rerun-root",
+            str(rerun_root),
+            "--instance-id",
+            instance,
+            "--output-dir",
+            str(out),
         ],
     )
     assert result.exit_code == 0, result.output
@@ -255,8 +273,10 @@ def test_cli_epsilon_rerun_root_requires_instance_id(tmp_path: Path) -> None:
         app,
         [
             "epsilon-estimate",
-            "--rerun-root", str(tmp_path),
-            "--output-dir", str(tmp_path / "out"),
+            "--rerun-root",
+            str(tmp_path),
+            "--output-dir",
+            str(tmp_path / "out"),
         ],
     )
     assert result.exit_code != 0
