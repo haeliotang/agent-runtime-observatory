@@ -116,6 +116,11 @@ jobs:
           jq -e '([.run.policy_decisions[] | select(.decision == "deny")] | length) == 2' run.json
           echo "run completed through the Postgres queue: blocked, 2 denials"
 
+          # A sync run executes inside the api process (the queued one ran in the
+          # worker), so the api's own /metrics registry gets an aro_runs_total sample.
+          curl -fsS -X POST localhost:8000/api/runs \
+            -H 'content-type: application/json' \
+            -d '{"example":"coding-agent-run"}' | jq -e '.run.status == "completed"' >/dev/null
           curl -fsS localhost:8000/metrics | grep -q '^aro_runs_total'
           echo "metrics exposed"
 
