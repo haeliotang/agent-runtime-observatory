@@ -179,7 +179,9 @@ Every serious agent platform converges on the same three layers: an
 plane** (what actually happened), and a **governance loop** (what was allowed
 and what still needs a human). This repo is those three layers at reference
 scale — small enough to read in an afternoon, real enough that every claim in
-this README is enforced by a test you can run.
+this README is enforced by a test you can run. Each claim is mapped to the
+command, CI job, or file that substantiates it — and every known gap is
+registered, not hidden — in [docs/evidence-matrix.md](docs/evidence-matrix.md).
 
 ## License
 
