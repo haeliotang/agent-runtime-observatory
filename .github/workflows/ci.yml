@@ -86,3 +86,58 @@ jobs:
           cache-dependency-path: apps/web/package-lock.json
       - run: npm ci
       - run: npm run build
+
+  compose-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bring up the observability stack
+        run: docker compose -f infra/docker-compose.yml up -d --build --wait --wait-timeout 180
+      - name: End-to-end smoke through the Postgres queue
+        run: |
+          set -euo pipefail
+          curl -fsS localhost:8000/healthz | jq -e '.status == "ok"'
+
+          RID=$(curl -fsS -X POST localhost:8000/api/runs \
+            -H 'content-type: application/json' \
+            -d '{"example":"policy-violation-run","mode":"queued"}' | jq -r '.run_id')
+          echo "queued run: $RID"
+
+          for _ in $(seq 1 30); do
+            s=$(curl -fsS "localhost:8000/api/runs/$RID" | jq -r '.run.status')
+            echo "status: $s"
+            [ "$s" = "completed" ] && break
+            sleep 2
+          done
+
+          curl -fsS "localhost:8000/api/runs/$RID" > run.json
+          jq -e '.run.status == "completed"' run.json
+          jq -e '.run.verdict == "blocked"' run.json
+          jq -e '([.run.policy_decisions[] | select(.decision == "deny")] | length) == 2' run.json
+          echo "run completed through the Postgres queue: blocked, 2 denials"
+
+          # A sync run executes inside the api process (the queued one ran in the
+          # worker), so the api's own /metrics registry gets an aro_runs_total sample.
+          curl -fsS -X POST localhost:8000/api/runs \
+            -H 'content-type: application/json' \
+            -d '{"example":"coding-agent-run"}' | jq -e '.run.status == "completed"' >/dev/null
+          curl -fsS localhost:8000/metrics | grep -q '^aro_runs_total'
+          echo "metrics exposed"
+
+          for _ in $(seq 1 20); do
+            if curl -fsS 'localhost:9090/api/v1/targets' | jq -e '
+                  ([.data.activeTargets[] | {(.labels.job): .health}] | add) as $j
+                  | $j["aro-api"] == "up" and $j["aro-worker"] == "up"' >/dev/null; then
+              echo "prometheus scraping aro-api and aro-worker"; break
+            fi
+            echo "waiting for prometheus scrape..."; sleep 3
+          done
+          curl -fsS 'localhost:9090/api/v1/targets' | jq -e '
+            ([.data.activeTargets[] | {(.labels.job): .health}] | add) as $j
+            | $j["aro-api"] == "up" and $j["aro-worker"] == "up"'
+      - name: Dump compose logs on failure
+        if: failure()
+        run: docker compose -f infra/docker-compose.yml logs --tail 200
+      - name: Tear down
+        if: always()
+        run: docker compose -f infra/docker-compose.yml down -v

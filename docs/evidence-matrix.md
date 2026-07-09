@@ -5,7 +5,7 @@ a test you can run."* This document makes that claim auditable. Every load-beari
 statement below is mapped to exactly one of:
 
 - **command** — a shell command that demonstrates it locally;
-- **CI job** — a job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) that gates it on every push (7 jobs: `clinic`, `lint`, `unit`, `integration`, `postgres`, `golden-replay`, `web-build`);
+- **CI job** — a job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) that gates it on every push (8 jobs: `clinic`, `lint`, `unit`, `integration`, `postgres`, `golden-replay`, `web-build`, `compose-e2e`);
 - **file / artifact** — where it lives;
 - **not shipped** — explicitly, with the tracking issue.
 
@@ -21,7 +21,7 @@ Status legend: ✅ shipped & verifiable · ⚠️ shipped but bounded (read the 
 | 4 | Tampering is **caught** by replay | `tests/replay/test_tamper_detection.py` edits a recorded digest / mutates the workspace and asserts a divergence (CI: `golden-replay`) | ✅ |
 | 5 | Every behavior is **measured** — OTel spans + Prometheus metrics | `aro_telemetry/otel.py` (run/step spans, digests + verdicts as attributes; `ARO_OTEL_CONSOLE=1` to see them), `aro_telemetry/metrics.py`; `GET /metrics`; test `tests/integration/test_api.py::test_metrics_exposed` (CI: `integration`) | ✅ |
 | 6 | Behavior is **regression-gated** by golden traces in CI | `uv run python -m aro_evals examples` runs fresh, checks `expected.json`, replays the committed golden trace with zero divergence required (CI: `golden-replay`) | ✅ |
-| 7 | The Grafana dashboard renders run rate, p95, steps by tool/decision, denials by rule, review debt by rule | `infra/grafana/dashboards/agent-runtime.json` (6 panels); live-data screenshot `docs/assets/grafana-dashboard.png` captured from the running stack | ⚠️ dashboard shipped; the compose stack that feeds it is **not yet exercised in CI** — gap G1 (#9) |
+| 7 | The Grafana dashboard renders run rate, p95, steps by tool/decision, denials by rule, review debt by rule | `infra/grafana/dashboards/agent-runtime.json` (6 panels); live-data screenshot `docs/assets/grafana-dashboard.png`; the data pipeline feeding it is exercised by the `compose-e2e` CI job (metrics flow + Prometheus scraping both targets) | ✅ pipeline CI-verified; Grafana *panel rendering* itself remains visual-only |
 
 ## Object model & governance
 
@@ -40,7 +40,7 @@ Status legend: ✅ shipped & verifiable · ⚠️ shipped but bounded (read the 
 | 13 | Postgres-backed queue with `FOR UPDATE SKIP LOCKED` claims (SQLite fallback) | `aro_runtime/pg_store.py`, `store.py`; `create_store()` selects by `ARO_DATABASE_URL`; test `tests/integration/test_postgres_store.py` against a live Postgres (CI: `postgres` service-container job) | ✅ |
 | 14 | Worker retry with exponential backoff, dead-lettering, deterministic chaos injection | `apps/worker/aro_worker/main.py` (`ARO_CHAOS_FAIL_ATTEMPTS`); tests `tests/integration/test_worker_retry.py` (transient→retry→success, persistent→dead-letter) (CI: `integration`) | ✅ |
 | 15 | API rate limiting on run creation | `_RateLimiter` in `apps/api/aro_api/main.py` (`ARO_RATE_LIMIT_PER_MINUTE`, 429 + `aro_rate_limited_total`); test `test_api_hardening.py::test_rate_limit_returns_429` (CI: `integration`) | ✅ |
-| 16 | Full observability stack runs via `docker compose up --build` | `infra/docker-compose.yml` (api, worker, Postgres, Prometheus, Grafana, healthchecks); verified manually end-to-end (100 runs → queue → Grafana) | ⚠️ **manual only** — not run in CI — gap G1 (#9) |
+| 16 | Full observability stack runs via `docker compose up --build` | `infra/docker-compose.yml` (api, worker, Postgres, Prometheus, Grafana, healthchecks); exercised end-to-end by the `compose-e2e` CI job — brings the stack up with `--wait`, runs a queued job through the Postgres queue, asserts health / `/metrics` / Prometheus targets | ✅ |
 
 ## Discipline & honesty claims
 
@@ -57,7 +57,7 @@ These are the honest edges. Each is either a tracked issue or an explicit design
 
 | ID | Gap | Why it matters | Tracking |
 |---|---|---|---|
-| **G1** | The docker-compose stack is verified **manually**, not in CI | README's "observability plane, live" and the quickstart's `docker compose up` are demonstrated by a screenshot, not gated — a regression could break the stack silently | issue **#9** |
+| **G1** | ✅ **Closed** — the docker-compose stack is now exercised in CI | was: verified only by a screenshot, so a stack regression could break silently | closed by the `compose-e2e` job (#9) |
 | **G2** | **Demo-grade security defaults** — the API is unauthenticated, CORS is open to `localhost:5173`, and rate limiting is the only guard | The substrate is **not internet-facing**; it is a reference/local deployment. Do not expose `aro_api` publicly without an auth layer in front | boundary stated in [`SECURITY.md`](../SECURITY.md) ✅ |
 | **G3** | The exfiltration example ships a **fixture `.env`** (`examples/policy-violation-run/workspace/.env`) | An unlabeled secret-shaped file invites misreading | file now carries a `FAKE` header + redaction note in [`SECURITY.md`](../SECURITY.md) ✅ |
 | **G4** | `TRACE_VERSION` exists but there is **no version-reject / migration path** | A future trace-format change would let `load_trace` silently misread an old trace instead of rejecting it | folded into **#12** (OTel/trace-model work) |
@@ -75,4 +75,5 @@ ARO_OTEL_CONSOLE=1 uv run python -m aro_evals examples   # see OTel spans (row 5
 cd infra && docker compose up --build
 ```
 
-CI runs the same, minus the manual compose stack, across the 7 jobs on every push.
+CI runs the same across 8 jobs on every push — including `compose-e2e`, which
+brings up the full docker-compose stack and runs this end-to-end smoke.
