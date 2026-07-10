@@ -1,3 +1,18 @@
+"""Test configuration split into two suites:
+
+- the **public suite** — runs anywhere, no private data, and is what CI's
+  ``clinic`` job gates on (441 tests);
+- the **private compatibility suite** — regression tests that replay recorded
+  artifacts from the private research monorepo (``models/``, the SWE-agent
+  stack). In a standalone checkout those artifacts are absent, so these tests
+  skip *cleanly* with an explicit reason rather than failing. Set
+  ``WUTAI_OBS_ARTIFACTS=1`` (monorepo CI) to make them fail loudly instead.
+
+The skip is scoped: only a ``MissingArtifact`` or a ``FileNotFoundError`` whose
+path matches a known artifact root becomes a skip; every other failure still
+fails the test.
+"""
+
 from __future__ import annotations
 
 import json
@@ -59,7 +74,13 @@ def pytest_runtest_call(item):
     if exc is not None:
         missing = _is_missing_artifact(exc[1])
         if missing is not None:
-            pytest.skip(f"legacy monorepo artifact not present: {missing}")
+            # Replace the raised exception with a clean Skipped instead of calling
+            # pytest.skip() here — raising out of a hookwrapper's teardown is what
+            # produced the PluggyTeardownRaisedWarning noise. force_exception makes
+            # the test report as skipped without the warning.
+            outcome.force_exception(
+                pytest.skip.Exception(f"legacy monorepo artifact not present: {missing}")
+            )
 
 
 @pytest.fixture
