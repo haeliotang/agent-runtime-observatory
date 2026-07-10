@@ -15,7 +15,7 @@ part most agent stacks don't have.
 | 3 | Run latency | `histogram_quantile(0.95, sum(rate(aro_run_duration_seconds_bucket[5m])) by (le))` | p95 < 1s (scripted runtime) | 7d |
 | 4 | Queue health | `aro_queue_dead_letters_total` increase | 0 dead letters | 7d |
 | 5 | **Replay integrity** | golden replay divergences in CI | **0 — hard gate, not a ratio** | every commit |
-| 6 | **Review debt consumption** | `sum(increase(aro_review_debt_total[7d]))` vs. `sum(increase(aro_attestations_total[7d]))` | every `needs_review` attested within 7d | 7d |
+| 6 | **Review debt consumption** | `sum(increase(aro_review_debt_total[7d])) - sum(increase(aro_review_debt_cleared_total[7d]))` — actual per-item consumption, not a count comparison | every `needs_review` item cleared by a named attestation within 7d | 7d |
 
 ## Error budgets and their consequences
 
@@ -34,9 +34,14 @@ part most agent stacks don't have.
   monitored as a ratio — a divergence blocks merge.
 - **#6 Review debt (governance SLO).** `needs_review` steps execute; the debt
   is the gap between "the system allowed it" and "a named human looked at
-  it". The SLI pairs debt creation (`aro_review_debt_total`) with debt
-  consumption (`aro_attestations_total`). A healthy deployment trends the gap
-  to zero via attestations — never by loosening rules.
+  *this item*". The SLI pairs per-item debt creation (`aro_review_debt_total`)
+  with per-item consumption (`aro_review_debt_cleared_total` — incremented
+  only when an accept/amend attestation names a specific needs_review
+  decision, and only on first clearing). Sum both across all scraped jobs:
+  debt is created in whichever process ran the step (api or worker); it is
+  cleared in the api process. A healthy deployment trends the difference to
+  zero via attestations — never by loosening rules. Per-run open items:
+  `GET /api/runs/{id}/review-debt?status=open`.
 
 ## Alerting sketch
 
@@ -58,7 +63,7 @@ groups:
       - alert: AroReviewDebtStale
         expr: |
           sum(increase(aro_review_debt_total[7d]))
-            > sum(increase(aro_attestations_total[7d]))
+            > sum(increase(aro_review_debt_cleared_total[7d]))
         labels: {severity: warn}
 ```
 

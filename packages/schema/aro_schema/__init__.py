@@ -13,6 +13,7 @@ from aro_schema.models import (
     GoalEventKind,
     PolicyDecision,
     ReplayReport,
+    ReviewDebtItem,
     ReviewerSeat,
     RiskSignal,
     RunStatus,
@@ -24,6 +25,7 @@ from aro_schema.models import (
     Task,
     utcnow,
 )
+from aro_schema.review_debt import compute_review_debt
 
 __all__ = [
     "EVIDENCE_ROLES",
@@ -39,6 +41,7 @@ __all__ = [
     "GoalEventKind",
     "PolicyDecision",
     "ReplayReport",
+    "ReviewDebtItem",
     "ReviewerSeat",
     "RiskSignal",
     "RunStatus",
@@ -49,6 +52,7 @@ __all__ = [
     "StepRecord",
     "Task",
     "canonical_json",
+    "compute_review_debt",
     "digest_obj",
     "digest_text",
     "utcnow",

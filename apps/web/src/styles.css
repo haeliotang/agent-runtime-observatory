@@ -239,6 +239,31 @@ td.preview {
   margin: 0 0 8px;
 }
 
+/* Review-debt attest form */
+
+.attest-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.attest-form input[type="text"] {
+  background: #0d1117;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.attest-form .attest-scope {
+  flex: 1;
+  min-width: 240px;
+}
+
 /* Misc */
 
 button {

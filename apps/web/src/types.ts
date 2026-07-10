@@ -77,11 +77,49 @@ export interface AgentRun {
   artifacts: Artifact[];
 }
 
+export interface Attestation {
+  id: string;
+  run_id: string;
+  seat_id: string | null;
+  decision: "accept" | "amend" | "reject";
+  declared_scope: string;
+  excluded_scope: string;
+  labels: string[];
+  proposed_by: string | null;
+  attested_by: string;
+  note: string;
+  subject_digest: string;
+  attested_at: string;
+  clears_decisions: string[];
+}
+
+export interface ReviewDebtItem {
+  decision_id: string;
+  run_id: string;
+  step_index: number;
+  rule_id: string;
+  reason: string;
+  status: "open" | "cleared";
+  cleared_by: string | null;
+  attested_by: string | null;
+}
+
+export interface CreateAttestationRequest {
+  decision: "accept" | "amend" | "reject";
+  declared_scope: string;
+  attested_by: string;
+  excluded_scope?: string;
+  note?: string;
+  clears_decisions?: string[];
+}
+
 export interface RunDetailResponse {
   run: AgentRun;
   task: unknown;
   example: string | null;
   trace_path: string | null;
+  attestations: Attestation[];
+  review_debt: ReviewDebtItem[];
 }
 
 export interface CreateRunResponse {

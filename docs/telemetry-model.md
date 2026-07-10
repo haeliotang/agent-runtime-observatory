@@ -45,12 +45,16 @@ These names are a public contract — the Grafana dashboard in
 | `aro_queue_dead_letters_total` | counter | — | queue items dead-lettered after exhausting retries |
 | `aro_rate_limited_total` | counter | — | run-creation requests rejected with 429 |
 | `aro_attestations_total` | counter | `decision` | human attestations recorded (accept / amend / reject) |
+| `aro_review_debt_cleared_total` | counter | `rule_id` | review-debt items consumed by an accept/amend attestation naming them (first clearing only) |
 
-`aro_review_debt_total` is the governance-specific metric: it counts the gap
-between "the system let it happen" and "a human has looked at it". Its
-counterpart `aro_attestations_total` counts debt being *consumed* — the pair
-is SLO #6 in [slo.md](slo.md). A healthy deployment trends the gap toward
-zero via review, not via loosening rules.
+`aro_review_debt_total` / `aro_review_debt_cleared_total` are the governance
+pair: created counts the gap between "the system let it happen" and "a human
+has looked at *this item*"; cleared counts actual per-item consumption (an
+accept/amend attestation naming the specific needs_review decision). Their
+difference — summed across all scraped jobs, since debt is created wherever
+the step ran but cleared in the api — is outstanding debt, SLO #6 in
+[slo.md](slo.md). A healthy deployment trends it to zero via review, not via
+loosening rules.
 
 ## Logs
 

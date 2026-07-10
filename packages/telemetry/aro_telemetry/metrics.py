@@ -39,6 +39,14 @@ RATE_LIMITED_TOTAL = Counter(
 ATTESTATIONS_TOTAL = Counter(
     "aro_attestations_total", "Human attestations recorded, by decision", ["decision"]
 )
+REVIEW_DEBT_CLEARED_TOTAL = Counter(
+    "aro_review_debt_cleared_total",
+    "Review-debt items cleared by an accept/amend attestation, by rule. "
+    "Outstanding debt = sum(aro_review_debt_total) - sum(aro_review_debt_cleared_total) "
+    "across all scraped jobs (debt is created in whichever process ran the step; "
+    "it is cleared in the api process).",
+    ["rule_id"],
+)
 
 
 class MetricsHooks(RunHooks):
