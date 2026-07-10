@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, field_validator
 
 
 def utcnow() -> datetime:
@@ -223,6 +223,7 @@ class AgentRun(BaseModel):
     started_at: datetime | None = None
     finished_at: datetime | None = None
     coverage: Coverage | None = None
+    reviewer_seats: list[ReviewerSeat] = Field(default_factory=list)
     steps: list[StepRecord] = Field(default_factory=list)
     policy_decisions: list[PolicyDecision] = Field(default_factory=list)
     risk_signals: list[RiskSignal] = Field(default_factory=list)
@@ -274,6 +275,15 @@ class Attestation(BaseModel):
     # A `reject` attestation never clears debt (the seat stays visibly empty).
     clears_decisions: list[str] = Field(default_factory=list)
 
+    @field_validator("attested_by", "declared_scope")
+    @classmethod
+    def _not_blank(cls, value: str) -> str:
+        # A blank name or scope is not an attestation — it is an empty seat
+        # wearing a name tag. The schema refuses to record it as either.
+        if not value or not value.strip():
+            raise ValueError("must not be blank")
+        return value
+
 
 class ReviewDebtItem(BaseModel):
     """One unit of review debt, with its consumable status.
@@ -292,6 +302,10 @@ class ReviewDebtItem(BaseModel):
     status: str = "open"  # "open" | "cleared"
     cleared_by: str | None = None  # attestation id
     attested_by: str | None = None  # the named human on that attestation
+    # True when an attestation names this item but its subject_digest no longer
+    # matches the stored run (the run was overwritten after it was attested).
+    # The item stays open — drift is surfaced, not silently honored.
+    stale_attestation: bool = False
 
 
 class StepDivergence(BaseModel):

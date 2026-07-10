@@ -25,7 +25,7 @@ from aro_schema.models import (
     Task,
     utcnow,
 )
-from aro_schema.review_debt import compute_review_debt
+from aro_schema.review_debt import compute_review_debt, run_subject_digest
 
 __all__ = [
     "EVIDENCE_ROLES",
@@ -53,6 +53,7 @@ __all__ = [
     "Task",
     "canonical_json",
     "compute_review_debt",
+    "run_subject_digest",
     "digest_obj",
     "digest_text",
     "utcnow",

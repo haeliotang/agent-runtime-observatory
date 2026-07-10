@@ -100,20 +100,32 @@ flagged step.
 
 **ReviewDebtItem** (derived, never stored) — one unit of review debt with a
 consumable status. A debt item exists for every `needs_review` decision and is
-`cleared` iff an accept/amend attestation names it; the first clearing
-attestation wins. The recorded run stays immutable — clearing debt is a *new
-fact* (the attestation), not an edit. Derivation: `compute_review_debt()` in
-`aro_schema/review_debt.py`; surfaced at `GET /api/runs/{id}/review-debt`
-(filterable by `?status=open`) and in the dashboard's Review debt panel.
+`cleared` iff an accept/amend attestation names it **and** that attestation's
+`subject_digest` still matches the current run; the first valid clearing wins.
+The recorded run stays immutable — clearing debt is a *new fact* (the
+attestation), not an edit. Derivation: `compute_review_debt()` /
+`run_subject_digest()` in `aro_schema/review_debt.py`; surfaced at
+`GET /api/runs/{id}/review-debt` (filterable by `?status=open`) and in the
+dashboard's Review debt panel.
 
-Three consumption rules, stated once:
+Five consumption rules, stated once:
 
 1. **reject clears nothing** — the seat stays visibly empty (stillmirror's
    "silence is not assent", applied to refusal);
 2. **run-level attestations clear nothing** — per-item debt requires per-item
    review;
-3. **debt is consumed at most once** — re-clearing an already-cleared item is
-   a recorded fact but does not recount in `aro_review_debt_cleared_total`.
+3. **debt is consumed at most once** — re-clearing an already-cleared item, or
+   naming the same id twice in one request, is recorded but does not recount in
+   `aro_review_debt_cleared_total`;
+4. **clearing is digest-bound** — an attestation clears only the exact run it
+   reviewed; if the run is later overwritten, the digest no longer matches, the
+   item reopens, and it is flagged `stale_attestation` (drift is surfaced, not
+   silently honored);
+5. **identity is refused when blank or forged** — a blank `attested_by` /
+   `declared_scope` is rejected, and a `seat_id` must reference a seat the run
+   declared. Identity is still *self-declared*, not authenticated (the API has
+   no auth — see [SECURITY.md](../SECURITY.md)); the substrate records who a
+   human said they were, and refuses the cases that would make even that a lie.
 
 **AgentRun.verdict** (derived) — wutai-style trust roll-up over the run's
 policy decisions: any deny → `blocked`, else any needs_review →

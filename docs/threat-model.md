@@ -40,7 +40,12 @@ test suite is T4/T6 executed end-to-end.
   a roadmap item.
 - **Multi-tenant authz on the API**: the FastAPI surface is unauthenticated,
   intended for local/demo use.
-- **Denial of service**: no rate limiting or queue quotas yet.
+- **Denial of service**: run creation is rate-limited
+  (`ARO_RATE_LIMIT_PER_MINUTE`, coarse fixed-window), but there are no queue
+  quotas, per-client limits, or payload-size caps yet.
+- **Attestation identity**: `attested_by` is self-declared, not authenticated
+  (see SECURITY.md). The substrate rejects blank identities, unknown seats, and
+  digest-mismatched clearings, but cannot prove the named human is real.
 
 ## Residual assumptions
 

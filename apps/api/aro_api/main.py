@@ -20,7 +20,7 @@ from aro_schema import (
     AttestationDecision,
     Decision,
     compute_review_debt,
-    digest_text,
+    run_subject_digest,
     utcnow,
 )
 from aro_telemetry import MetricsHooks, TracingHooks, render_metrics, setup_tracing
@@ -33,7 +33,7 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -189,49 +189,66 @@ def create_app(
         record = store.get_run(run_id)
         if record is None:
             raise HTTPException(404, f"unknown run: {run_id}")
-        if request.clears_decisions:
-            # A reject leaves the seat empty; it cannot consume debt.
+        run = record["run"]
+
+        # Identity is self-declared within the trusted interior (the API is
+        # unauthenticated — see SECURITY.md). We can still refuse the two things
+        # that would make the record a lie: a blank human, and a seat that this
+        # run never declared.
+        if request.seat_id is not None and request.seat_id not in {
+            seat.id for seat in run.reviewer_seats
+        }:
+            raise HTTPException(
+                422, f"seat_id {request.seat_id!r} is not a reviewer seat of run {run_id}"
+            )
+
+        # Dedup within the request so one call cannot double-count a clearing.
+        clears = list(dict.fromkeys(request.clears_decisions))
+        if clears:
             if request.decision == AttestationDecision.REJECT:
                 raise HTTPException(422, "a reject attestation cannot clear review debt items")
-            # Every cleared id must be a real needs_review decision on this run.
-            reviewable = {
-                d.id for d in record["run"].policy_decisions if d.decision == Decision.NEEDS_REVIEW
-            }
-            unknown = [d for d in request.clears_decisions if d not in reviewable]
+            reviewable = {d.id for d in run.policy_decisions if d.decision == Decision.NEEDS_REVIEW}
+            unknown = [d for d in clears if d not in reviewable]
             if unknown:
                 raise HTTPException(
-                    422,
-                    f"not needs_review decisions of run {run_id}: {', '.join(unknown)}",
+                    422, f"not needs_review decisions of run {run_id}: {', '.join(unknown)}"
                 )
+
         existing = store.list_attestations(run_id)
-        already_cleared = {
+        before = {
             item.decision_id
-            for item in compute_review_debt(record["run"], existing)
+            for item in compute_review_debt(run, existing)
             if item.status == "cleared"
         }
-        attestation = Attestation(
-            id=f"att-{uuid.uuid4().hex[:12]}",
-            run_id=run_id,
-            seat_id=request.seat_id,
-            decision=request.decision,
-            declared_scope=request.declared_scope,
-            excluded_scope=request.excluded_scope,
-            labels=request.labels,
-            proposed_by=request.proposed_by,
-            attested_by=request.attested_by,
-            note=request.note,
-            # What exactly is being attested: the stored run record, by digest.
-            subject_digest=digest_text(record["run"].model_dump_json()),
-            attested_at=utcnow(),
-            clears_decisions=request.clears_decisions,
-        )
+        try:
+            attestation = Attestation(
+                id=f"att-{uuid.uuid4().hex[:12]}",
+                run_id=run_id,
+                seat_id=request.seat_id,
+                decision=request.decision,
+                declared_scope=request.declared_scope,
+                excluded_scope=request.excluded_scope,
+                labels=request.labels,
+                proposed_by=request.proposed_by,
+                attested_by=request.attested_by,
+                note=request.note,
+                # Bind the attestation to the exact record being reviewed; if the
+                # run is later overwritten, the digest no longer matches and the
+                # debt reopens (compute_review_debt flags it stale).
+                subject_digest=run_subject_digest(run),
+                attested_at=utcnow(),
+                clears_decisions=clears,
+            )
+        except ValidationError as exc:
+            raise HTTPException(422, f"invalid attestation: {exc.errors()[0]['msg']}") from exc
+
         store.save_attestation(attestation)
         ATTESTATIONS_TOTAL.labels(decision=attestation.decision.value).inc()
-        # Count each debt item's consumption once, at first clearing.
-        rules_by_decision = {d.id: d.rule_id for d in record["run"].policy_decisions}
-        for decision_id in attestation.clears_decisions:
-            if decision_id not in already_cleared:
-                REVIEW_DEBT_CLEARED_TOTAL.labels(rule_id=rules_by_decision[decision_id]).inc()
+        # Count only items that actually transitioned open -> cleared under this
+        # attestation: idempotent by construction (re-clearing changes nothing).
+        for item in compute_review_debt(run, [*existing, attestation]):
+            if item.status == "cleared" and item.decision_id not in before:
+                REVIEW_DEBT_CLEARED_TOTAL.labels(rule_id=item.rule_id).inc()
         return attestation.model_dump(mode="json")
 
     @app.get("/api/queue")

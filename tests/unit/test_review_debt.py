@@ -1,7 +1,8 @@
 """Semantics of consumable review debt (see docs/object-model.md):
 debt derives from needs_review decisions; accept/amend clears named items;
-reject clears nothing; run-level attestations clear nothing."""
+reject and stale/blank attestations clear nothing."""
 
+import pytest
 from aro_schema import (
     AgentRun,
     Attestation,
@@ -9,7 +10,7 @@ from aro_schema import (
     Decision,
     PolicyDecision,
     compute_review_debt,
-    digest_text,
+    run_subject_digest,
 )
 
 
@@ -29,14 +30,21 @@ def _run(*decisions: PolicyDecision) -> AgentRun:
     return AgentRun(id="r1", task_id="t1", agent="a", policy_decisions=list(decisions))
 
 
-def _attestation(decision: AttestationDecision, clears: list[str], att_id: str = "att-1"):
+def _attestation(
+    run: AgentRun,
+    decision: AttestationDecision,
+    clears: list[str],
+    att_id: str = "att-1",
+    subject_digest: str | None = None,
+):
     return Attestation(
         id=att_id,
         run_id="r1",
         decision=decision,
         declared_scope="scope",
         attested_by="Hao",
-        subject_digest=digest_text("x"),
+        # Clearing is digest-bound; default to the run's real digest.
+        subject_digest=subject_digest or run_subject_digest(run),
         clears_decisions=clears,
     )
 
@@ -54,7 +62,7 @@ def test_debt_derives_only_from_needs_review():
 
 def test_accept_clears_named_item():
     run = _run(_decision(1, Decision.NEEDS_REVIEW), _decision(3, Decision.NEEDS_REVIEW))
-    items = compute_review_debt(run, [_attestation(AttestationDecision.ACCEPT, ["r1-pd-1"])])
+    items = compute_review_debt(run, [_attestation(run, AttestationDecision.ACCEPT, ["r1-pd-1"])])
     by_id = {item.decision_id: item for item in items}
     assert by_id["r1-pd-1"].status == "cleared"
     assert by_id["r1-pd-1"].cleared_by == "att-1"
@@ -64,19 +72,62 @@ def test_accept_clears_named_item():
 
 def test_reject_never_clears():
     run = _run(_decision(1, Decision.NEEDS_REVIEW))
-    items = compute_review_debt(run, [_attestation(AttestationDecision.REJECT, ["r1-pd-1"])])
+    items = compute_review_debt(run, [_attestation(run, AttestationDecision.REJECT, ["r1-pd-1"])])
     assert items[0].status == "open"  # the seat stays visibly empty
 
 
 def test_run_level_attestation_clears_nothing():
     run = _run(_decision(1, Decision.NEEDS_REVIEW))
-    items = compute_review_debt(run, [_attestation(AttestationDecision.ACCEPT, [])])
+    items = compute_review_debt(run, [_attestation(run, AttestationDecision.ACCEPT, [])])
     assert items[0].status == "open"
 
 
 def test_first_clearing_attestation_wins():
     run = _run(_decision(1, Decision.NEEDS_REVIEW))
-    first = _attestation(AttestationDecision.ACCEPT, ["r1-pd-1"], att_id="att-first")
-    second = _attestation(AttestationDecision.AMEND, ["r1-pd-1"], att_id="att-second")
+    first = _attestation(run, AttestationDecision.ACCEPT, ["r1-pd-1"], att_id="att-first")
+    second = _attestation(run, AttestationDecision.AMEND, ["r1-pd-1"], att_id="att-second")
     items = compute_review_debt(run, [first, second])
     assert items[0].cleared_by == "att-first"
+
+
+def test_digest_mismatch_does_not_clear_and_flags_stale():
+    # An attestation whose subject_digest does not match the current run cannot
+    # clear its debt — the run was overwritten after review (finding 2).
+    run = _run(_decision(1, Decision.NEEDS_REVIEW))
+    stale = _attestation(
+        run, AttestationDecision.ACCEPT, ["r1-pd-1"], subject_digest="sha256:" + "0" * 64
+    )
+    (item,) = compute_review_debt(run, [stale])
+    assert item.status == "open"
+    assert item.cleared_by is None
+    assert item.stale_attestation is True
+
+
+def test_fresh_attestation_beats_a_stale_one_for_same_item():
+    run = _run(_decision(1, Decision.NEEDS_REVIEW))
+    stale = _attestation(
+        run,
+        AttestationDecision.ACCEPT,
+        ["r1-pd-1"],
+        att_id="att-stale",
+        subject_digest="sha256:" + "0" * 64,
+    )
+    fresh = _attestation(run, AttestationDecision.ACCEPT, ["r1-pd-1"], att_id="att-fresh")
+    (item,) = compute_review_debt(run, [stale, fresh])
+    assert item.status == "cleared"
+    assert item.cleared_by == "att-fresh"
+    assert item.stale_attestation is False
+
+
+def test_blank_identity_or_scope_is_refused_by_the_schema():
+    run = _run(_decision(1, Decision.NEEDS_REVIEW))
+    for bad in ({"attested_by": "  "}, {"declared_scope": ""}):
+        with pytest.raises(ValueError):
+            Attestation(
+                id="a",
+                run_id="r1",
+                decision=AttestationDecision.ACCEPT,
+                declared_scope=bad.get("declared_scope", "scope"),
+                attested_by=bad.get("attested_by", "Hao"),
+                subject_digest=run_subject_digest(run),
+            )
