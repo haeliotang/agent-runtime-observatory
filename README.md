@@ -108,7 +108,15 @@ item is individually consumable: an **Attestation**
 an explicitly excluded scope — approval is never total. A `reject` clears
 nothing (the seat stays visibly empty), and outstanding debt is measurable:
 `aro_review_debt_total` − `aro_review_debt_cleared_total`, per-run at
-`GET /api/runs/{id}/review-debt?status=open`. The object model is
+`GET /api/runs/{id}/review-debt?status=open`.
+
+The consumption is guarded, not just declared. Clearing is **bound to the
+exact record reviewed** by digest: overwrite the run afterward and the debt
+reopens, flagged `stale_attestation`. A blank name or scope is refused, and a
+`seat_id` must reference a seat the run declared. Identity is still
+*self-declared, not authenticated* — the API has no auth ([SECURITY.md](SECURITY.md))
+— so the substrate records who a human said they were and refuses the cases
+that would make even that a lie. The object model is
 field-aligned with my sibling repos' models; see
 [docs/object-model-alignment.md](docs/object-model-alignment.md).
 
@@ -222,7 +230,10 @@ it has killed every deployable intervention it tested; sensitivity is calibrated
 an oracle positive control (Fisher p=0.0040). See its README for the full protocol.
 
 Its verdicts are outsider-reproducible without this repo's private history:
-**[credential_packet_v1](https://github.com/haeliotang/agent-runtime-observatory/releases/tag/v0.2.0)**
+**[credential_packet_v1](https://github.com/haeliotang/agent-runtime-observatory/releases/tag/v0.2.2)**
 (release asset, 28K, sha256 `af6e4142299b58cbfbeb67b3b357a6e438c272f7e074ee17b9c8e012a4dd01f1`)
 bundles the recorded official-eval reports with a closed SHA chain — download,
 verify, and re-derive the verdict table with stock `python3` per its `VERIFY.md`.
+This isn't a one-time claim: the `release-evidence` CI job re-downloads the
+published asset, checks the pinned SHA and the 7/7 chain, and re-derives the
+table on every push — one of the nine required checks.
