@@ -141,3 +141,31 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose -f infra/docker-compose.yml down -v
+
+  release-evidence:
+    # Turns the credential packet from a one-time verification into a standing
+    # gate: download the published asset by fixed URL, check the pinned SHA,
+    # verify the internal SHA chain, and reproduce the verdict table — on every
+    # push. If the Release asset ever drifts from the pinned digest, CI goes red.
+    runs-on: ubuntu-latest
+    env:
+      PACKET_URL: https://github.com/haeliotang/agent-runtime-observatory/releases/download/v0.2.0/credential_packet_v1.tar.gz
+      PACKET_SHA: af6e4142299b58cbfbeb67b3b357a6e438c272f7e074ee17b9c8e012a4dd01f1
+    steps:
+      - name: Download the published packet and check the pinned SHA
+        run: |
+          set -euo pipefail
+          curl -fsSL "$PACKET_URL" -o packet.tar.gz
+          echo "$PACKET_SHA  packet.tar.gz" | sha256sum -c -
+      - name: Verify the internal SHA chain and reproduce the verdict table
+        run: |
+          set -euo pipefail
+          tar xzf packet.tar.gz
+          cd credential_packet_v1
+          # every file in MANIFEST hashes to its recorded sha256 (independent check)
+          jq -r '.files[] | .sha256 + "  " + .path' MANIFEST.json | sha256sum -c -
+          # stock python3, no deps: reproduce the verdicts and guard doc drift
+          python3 run_intervention_verdict_demo.py ./models | tee table.out >/dev/null
+          grep -q "calibrated null" table.out
+          grep -q "true positive" table.out
+          python3 run_intervention_verdict_demo.py ./models --check-docs

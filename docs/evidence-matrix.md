@@ -7,7 +7,7 @@ a file or doc, and those are marked as such rather than dressed up as tested.
 Every load-bearing statement below is mapped to exactly one of:
 
 - **command** — a shell command that demonstrates it locally;
-- **CI job** — a job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) that gates it on every push (8 jobs: `clinic`, `lint`, `unit`, `integration`, `postgres`, `golden-replay`, `web-build`, `compose-e2e`);
+- **CI job** — a job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) that gates it on every push (9 jobs: `clinic`, `lint`, `unit`, `integration`, `postgres`, `golden-replay`, `web-build`, `compose-e2e`, `release-evidence`);
 - **file / artifact** — where it lives;
 - **not shipped** — explicitly, with the tracking issue.
 
@@ -52,6 +52,7 @@ Status legend: ✅ shipped & verifiable · ⚠️ shipped but bounded (read the 
 | 18 | Traces are tamper-**evident**, not tamper-**proof** (no signatures) | Stated in README "Failure cases"; replay proves evident (row 4); signing is **not shipped** | ❌ by design — signed work packets are a roadmap item |
 | 19 | The agent is a **deterministic scripted runner**; LLM-step recording is not shipped | `aro_runtime/tools.py` (in-process simulated tools); README says so | ❌ by design — roadmap |
 | 20 | wutai-clinic: preregistered paired-intervention audit harness, null-reporting, oracle positive control | `packages/clinic/` + its README; CI `clinic` job (`pytest packages/clinic/tests`) | ✅ gated by the `clinic` CI job. The package's internal figures (test count, oracle p-value) are owned by `packages/clinic` and not re-audited in this matrix |
+| 21 | The clinic verdicts are outsider-reproducible from the published packet, continuously | `credential_packet_v1` (v0.2.0 asset, sha256 `af6e4142…`); CI `release-evidence` job downloads it by fixed URL, checks the pinned SHA, verifies the 7/7 internal chain, and reproduces the verdict table on every push | ✅ standing gate, not a one-time check |
 
 ## Known gaps (registered, not hidden)
 
@@ -77,5 +78,7 @@ ARO_OTEL_CONSOLE=1 uv run python -m aro_evals examples   # see OTel spans (row 5
 cd infra && docker compose up --build
 ```
 
-CI runs the same across 8 jobs on every push — including `compose-e2e`, which
-brings up the full docker-compose stack and runs this end-to-end smoke.
+CI runs the same across 9 jobs on every push — including `compose-e2e`, which
+brings up the full docker-compose stack and runs this end-to-end smoke, and
+`release-evidence`, which re-verifies the published credential packet against
+its pinned SHA.
