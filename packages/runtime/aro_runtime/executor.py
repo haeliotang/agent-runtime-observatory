@@ -102,6 +102,7 @@ def execute_script(
         status=RunStatus.RUNNING,
         started_at=utcnow(),
         coverage=SCRIPTED_COVERAGE,
+        reviewer_seats=script.reviewer_seats,
     )
     hooks.on_run_start(run)
 

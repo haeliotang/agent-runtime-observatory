@@ -1,8 +1,10 @@
 # Evidence matrix
 
-The README ends with a strong claim: *"every claim in this README is enforced by
-a test you can run."* This document makes that claim auditable. Every load-bearing
-statement below is mapped to exactly one of:
+The README ends with a claim: *"every claim in this README is backed by a
+command, test, CI job, or file you can check."* This document makes that
+auditable. Not every claim is executed by a *test* — some are substantiated by
+a file or doc, and those are marked as such rather than dressed up as tested.
+Every load-bearing statement below is mapped to exactly one of:
 
 - **command** — a shell command that demonstrates it locally;
 - **CI job** — a job in [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) that gates it on every push (8 jobs: `clinic`, `lint`, `unit`, `integration`, `postgres`, `golden-replay`, `web-build`, `compose-e2e`);
@@ -27,9 +29,9 @@ Status legend: ✅ shipped & verifiable · ⚠️ shipped but bounded (read the 
 
 | # | Claim | Substantiated by | Status |
 |---|---|---|---|
-| 8 | Nine first-class objects, accountability structural not aspirational | `packages/schema/aro_schema/models.py`; `docs/object-model.md`; tests `tests/unit/test_schema.py`, `test_alignment_schema.py` (CI: `unit`) | ✅ |
+| 8 | A first-class object model (nine core objects + governance objects: Attestation, ReviewDebtItem, Coverage, GoalEvent), accountability structural not aspirational | `packages/schema/aro_schema/models.py`; `docs/object-model.md`; tests `tests/unit/test_schema.py`, `test_alignment_schema.py`, `test_review_debt.py` (CI: `unit`) | ✅ |
 | 9 | `needs_review` executes the step but records **review debt** (`aro_review_debt_total`) | `aro_runtime/executor.py` (records `PolicyDecision(needs_review)` + `RiskSignal`); metric in `aro_telemetry/metrics.py`; run `policy-violation-run` and read `/metrics` | ✅ |
-| 10 | Debt is **consumed** by Attestations, per item: `clears_decisions` binds an attestation to specific `needs_review` decisions; `ReviewDebtItem` carries the consumable open/cleared status; reject and run-level attestations clear nothing | `compute_review_debt()` in `aro_schema/review_debt.py`; `GET /api/runs/{id}/review-debt?status=open`; `aro_review_debt_cleared_total`; tests `tests/unit/test_review_debt.py`, `tests/integration/test_review_debt_api.py` (CI: `unit`, `integration`); dashboard Review debt panel with a clear-items form | ✅ |
+| 10 | Debt is **consumed** by Attestations, per item, and consumption is guarded: `clears_decisions` binds to specific `needs_review` decisions; clearing is digest-bound (an overwritten run reopens the debt, flagged stale); blank identity, unknown seats, reject-clearing, and duplicate ids are all refused | `compute_review_debt()` + `run_subject_digest()` in `aro_schema/review_debt.py`; `GET /api/runs/{id}/review-debt?status=open`; `aro_review_debt_cleared_total`; tests `tests/unit/test_review_debt.py`, `tests/integration/test_review_debt_api.py` incl. the three hardening attacks (CI: `unit`, `integration`); dashboard Review debt panel | ✅ |
 | 11 | The object model is **field-aligned** with wutai and stillmirror-review | `docs/object-model-alignment.md` (field-by-field mapping + the six implemented deltas: `Attestation`, run `verdict`, `Coverage`, `GoalEvent`, per-step `allocated_to`, `EVIDENCE_ROLES`) | ✅ |
 | 12 | `policy-violation-run` = 5-step trace, 3 policy decisions, 3 risk signals, replay zero-divergence | `examples/policy-violation-run/expected.json` asserts exactly this; enforced by `tests/replay/test_golden_regression.py` (CI: `golden-replay`) | ✅ |
 

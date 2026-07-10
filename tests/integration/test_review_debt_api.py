@@ -80,6 +80,77 @@ def test_unknown_or_non_review_decision_rejected(client):
         assert response.status_code == 422, bad
 
 
+def test_blank_identity_is_rejected(client):
+    # Finding 1: an empty attested_by / declared_scope must not clear debt.
+    run_id, debt = _violation_run(client)
+    for body in (
+        {"decision": "accept", "declared_scope": "s", "attested_by": ""},
+        {"decision": "accept", "declared_scope": "  ", "attested_by": "Hao"},
+    ):
+        response = client.post(
+            f"/api/runs/{run_id}/attestations",
+            json={**body, "clears_decisions": [debt[0]["decision_id"]]},
+        )
+        assert response.status_code == 422, body
+    assert client.get(f"/api/runs/{run_id}/review-debt?status=open").json() != []
+
+
+def test_unknown_seat_is_rejected_but_declared_seat_is_accepted(client):
+    # Finding 1: seat_id, when given, must reference a seat this run declared.
+    run_id, debt = _violation_run(client)
+    bad = client.post(
+        f"/api/runs/{run_id}/attestations",
+        json={
+            "decision": "accept",
+            "declared_scope": "s",
+            "attested_by": "Hao",
+            "seat_id": "nonexistent-seat",
+            "clears_decisions": [debt[0]["decision_id"]],
+        },
+    )
+    assert bad.status_code == 422
+    assert client.get(f"/api/runs/{run_id}/review-debt?status=open").json() != []
+
+    # policy-violation-run declares the seat "seat-security"
+    good = client.post(
+        f"/api/runs/{run_id}/attestations",
+        json={
+            "decision": "accept",
+            "declared_scope": "s",
+            "attested_by": "Hao",
+            "seat_id": "seat-security",
+            "clears_decisions": [debt[0]["decision_id"]],
+        },
+    )
+    assert good.status_code == 200
+    assert client.get(f"/api/runs/{run_id}/review-debt?status=open").json() == []
+
+
+def test_duplicate_ids_in_one_request_count_once(client):
+    # Finding 3: passing the same decision id twice must not double-count.
+    run_id, debt = _violation_run(client)
+    did = debt[0]["decision_id"]
+
+    def cleared_value() -> float:
+        for ln in client.get("/metrics").text.splitlines():
+            if ln.startswith("aro_review_debt_cleared_total{") and "review-sensitive-read" in ln:
+                return float(ln.split()[-1])
+        return 0.0
+
+    before = cleared_value()
+    resp = client.post(
+        f"/api/runs/{run_id}/attestations",
+        json={
+            "decision": "accept",
+            "declared_scope": "s",
+            "attested_by": "Hao",
+            "clears_decisions": [did, did, did],
+        },
+    )
+    assert resp.status_code == 200
+    assert cleared_value() == before + 1.0  # not +3
+
+
 def test_cleared_metric_counts_once(client):
     run_id, debt = _violation_run(client)
     body = {
