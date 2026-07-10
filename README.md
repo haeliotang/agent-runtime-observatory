@@ -3,6 +3,7 @@
 **A reference implementation for tracing, replaying, evaluating, and governing agent runs across trust boundaries.**
 
 [![CI](https://github.com/haeliotang/agent-runtime-observatory/actions/workflows/ci.yml/badge.svg)](https://github.com/haeliotang/agent-runtime-observatory/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/haeliotang/agent-runtime-observatory)](https://github.com/haeliotang/agent-runtime-observatory/releases)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 ## The problem
@@ -130,6 +131,9 @@ review debt by rule:
 
 ![Grafana dashboard with live run, denial, and review-debt metrics](docs/assets/grafana-dashboard.png)
 
+This is not just a screenshot: the `compose-e2e` CI job brings the full stack
+up on every push, runs a queued policy-violation run through the Postgres
+queue, and asserts health, verdicts, metrics, and Prometheus scraping.
 Targets and alerting sketches for these panels live in [docs/slo.md](docs/slo.md).
 
 ## Failure cases, honestly
@@ -146,6 +150,9 @@ Targets and alerting sketches for these panels live in [docs/slo.md](docs/slo.md
   [docs/error-taxonomy.md](docs/error-taxonomy.md), with measurable targets in
   [docs/slo.md](docs/slo.md) — including two governance SLOs (replay
   integrity, review-debt consumption) most stacks don't track.
+- Security defaults are demo-grade and the substrate is **not
+  internet-facing** — the boundary is stated plainly in
+  [SECURITY.md](SECURITY.md).
 
 ## Relation to my other repos
 
@@ -164,16 +171,26 @@ Targets and alerting sketches for these panels live in [docs/slo.md](docs/slo.md
 
 ## Roadmap
 
-Tracked as issues; the next increments are:
+Tracked as [open issues](https://github.com/haeliotang/agent-runtime-observatory/issues);
+the next increments are:
 
-1. OTel trace-model deepening (OTLP + Tempo in compose, span links to decisions)
-2. Counterfactual policy replay — evaluate a *new* policy against *old* traces
-3. Grafana review-debt dashboard row + alerting rules (SLO sketch in [docs/slo.md](docs/slo.md))
-4. Expanded golden set + nightly regression CI
-5. JSON Schema export of the object model
-6. ~~Worker scale-out: Postgres queue~~ shipped — Postgres store with
-   `SKIP LOCKED` claims, retry/backoff, dead-lettering, chaos injection;
-   remaining: k8s worker HPA, GHCR image publish
+1. Browsable traces — Tempo in compose, span links between record and replay,
+   Prometheus alerting rules from the SLO sketches
+   ([#8](https://github.com/haeliotang/agent-runtime-observatory/issues/8))
+2. GHCR image publish, making the k8s manifests' image reference real
+   ([#10](https://github.com/haeliotang/agent-runtime-observatory/issues/10))
+3. OTel GenAI semantic-convention mapping + a TRACE_VERSION reject/migration
+   path ([#12](https://github.com/haeliotang/agent-runtime-observatory/issues/12))
+4. Deterministic golden traces — strip wall-clock timestamps so goldens are
+   purely content-addressed
+   ([#15](https://github.com/haeliotang/agent-runtime-observatory/issues/15))
+5. Counterfactual policy replay — evaluate a *new* policy against *old*
+   traces; expanded golden set + nightly regression; JSON Schema export of
+   the object model
+
+Shipped along the way: Postgres queue with `SKIP LOCKED` claims,
+retry/dead-letter/chaos, the compose stack in CI (#9), and per-item
+consumable review debt (#11).
 
 ## Why this matters
 
@@ -192,9 +209,16 @@ registered, not hidden — in [docs/evidence-matrix.md](docs/evidence-matrix.md)
 
 ## Intervention auditing: wutai-clinic
 
-[`packages/clinic`](packages/clinic) — a runtime-verifiable paired-intervention audit
-harness for coding agents: preregistration → runtime trigger-hit verification →
+[`packages/clinic`](packages/clinic) — the audit-protocol layer of this substrate,
+applied to benchmarkable agent tasks: a runtime-verifiable paired-intervention audit
+harness for coding agents. Preregistration → runtime trigger-hit verification →
 paired control/treatment arms → manipulation checks → per-task noise floor (ε) →
 official SWE-bench outcome anchoring → null-reporting discipline. Applied honestly,
 it has killed every deployable intervention it tested; sensitivity is calibrated via
 an oracle positive control (Fisher p=0.0040). See its README for the full protocol.
+
+Its verdicts are outsider-reproducible without this repo's private history:
+**[credential_packet_v1](https://github.com/haeliotang/agent-runtime-observatory/releases/tag/v0.2.0)**
+(release asset, 28K, sha256 `af6e4142299b58cbfbeb67b3b357a6e438c272f7e074ee17b9c8e012a4dd01f1`)
+bundles the recorded official-eval reports with a closed SHA chain — download,
+verify, and re-derive the verdict table with stock `python3` per its `VERIFY.md`.
