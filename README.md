@@ -181,8 +181,10 @@ the next increments are:
    ([#8](https://github.com/haeliotang/agent-runtime-observatory/issues/8))
 2. GHCR image publish, making the k8s manifests' image reference real
    ([#10](https://github.com/haeliotang/agent-runtime-observatory/issues/10))
-3. OTel GenAI semantic-convention mapping + a TRACE_VERSION reject/migration
-   path ([#12](https://github.com/haeliotang/agent-runtime-observatory/issues/12))
+3. OTel GenAI semantic-convention mapping
+   ([#12](https://github.com/haeliotang/agent-runtime-observatory/issues/12))
+   and a TRACE_VERSION reject/migration path
+   ([#21](https://github.com/haeliotang/agent-runtime-observatory/issues/21))
 4. Deterministic golden traces — strip wall-clock timestamps so goldens are
    purely content-addressed
    ([#15](https://github.com/haeliotang/agent-runtime-observatory/issues/15))
