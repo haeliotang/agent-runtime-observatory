@@ -1,4 +1,6 @@
 import type {
+  Attestation,
+  CreateAttestationRequest,
   CreateRunResponse,
   ExampleInfo,
   ReplayReport,
@@ -37,6 +39,13 @@ export const api = {
   replay: (id: string) =>
     request<ReplayReport>(`/api/runs/${encodeURIComponent(id)}/replay`, {
       method: "POST",
+    }),
+
+  attest: (id: string, body: CreateAttestationRequest) =>
+    request<Attestation>(`/api/runs/${encodeURIComponent(id)}/attestations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     }),
 };
 

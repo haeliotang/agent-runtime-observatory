@@ -98,12 +98,15 @@ Nine objects, designed so accountability is structural rather than aspirational
 | `Artifact` | a produced file, content-addressed |
 
 The load-bearing semantic: **`needs_review` executes the step but records
-review debt** — an honest ledger of what a human still owes a look, exposed
-as a Prometheus metric (`aro_review_debt_total`). Debt is consumed by
-**Attestations** (`POST /api/runs/{id}/attestations`): a named human
-accepting, amending, or rejecting a declared scope of the run — with an
-explicitly excluded scope, because approval is never total. The object model
-is field-aligned with my sibling repos' models; see
+review debt** — an honest ledger of what a human still owes a look. Each debt
+item is individually consumable: an **Attestation**
+(`POST /api/runs/{id}/attestations`) by a named human names the specific
+`needs_review` decisions it clears (`clears_decisions`), with a declared and
+an explicitly excluded scope — approval is never total. A `reject` clears
+nothing (the seat stays visibly empty), and outstanding debt is measurable:
+`aro_review_debt_total` − `aro_review_debt_cleared_total`, per-run at
+`GET /api/runs/{id}/review-debt?status=open`. The object model is
+field-aligned with my sibling repos' models; see
 [docs/object-model-alignment.md](docs/object-model-alignment.md).
 
 ## Trace → replay → eval, concretely

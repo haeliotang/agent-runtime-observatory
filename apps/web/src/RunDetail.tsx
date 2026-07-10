@@ -4,6 +4,142 @@ import { DecisionBadge, SeverityBadge, StatusBadge } from "./badges";
 import { fmtBytes, fmtDate, fmtMs, fmtValue, shortDigest } from "./format";
 import type { PolicyDecision, ReplayReport, RunDetailResponse } from "./types";
 
+function ReviewDebtSection({
+  detail,
+  onAttested,
+}: {
+  detail: RunDetailResponse;
+  onAttested: (next: RunDetailResponse) => void;
+}) {
+  const debt = detail.review_debt;
+  const open = debt.filter((d) => d.status === "open");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [attestedBy, setAttestedBy] = useState("");
+  const [scope, setScope] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const toggle = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clear = async () => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      await api.attest(detail.run.id, {
+        decision: "accept",
+        declared_scope: scope,
+        attested_by: attestedBy,
+        clears_decisions: [...selected],
+      });
+      onAttested(await api.run(detail.run.id));
+      setSelected(new Set());
+      setScope("");
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <section className="panel">
+      <h2>
+        Review debt{" "}
+        {open.length > 0 ? (
+          <span className="badge badge-amber">{open.length} open</span>
+        ) : (
+          debt.length > 0 && <span className="badge badge-green">all cleared</span>
+        )}
+      </h2>
+      {debt.length === 0 ? (
+        <p className="muted">No review debt — no step was flagged needs_review.</p>
+      ) : (
+        <>
+          <table>
+            <thead>
+              <tr>
+                <th />
+                <th className="num">step</th>
+                <th>rule</th>
+                <th>reason</th>
+                <th>status</th>
+                <th>cleared by</th>
+              </tr>
+            </thead>
+            <tbody>
+              {debt.map((item) => (
+                <tr key={item.decision_id}>
+                  <td>
+                    {item.status === "open" && (
+                      <input
+                        type="checkbox"
+                        checked={selected.has(item.decision_id)}
+                        onChange={() => toggle(item.decision_id)}
+                        aria-label={`select debt item at step ${item.step_index}`}
+                      />
+                    )}
+                  </td>
+                  <td className="num">{item.step_index}</td>
+                  <td>
+                    <code className="mono">{item.rule_id}</code>
+                  </td>
+                  <td>{item.reason}</td>
+                  <td>
+                    {item.status === "cleared" ? (
+                      <span className="badge badge-green">cleared</span>
+                    ) : (
+                      <span className="badge badge-amber">open</span>
+                    )}
+                  </td>
+                  <td>{item.attested_by ?? <span className="muted">—</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {open.length > 0 && (
+            <div className="attest-form">
+              <input
+                type="text"
+                placeholder="your name (attested_by)"
+                value={attestedBy}
+                onChange={(e) => setAttestedBy(e.target.value)}
+              />
+              <input
+                type="text"
+                className="attest-scope"
+                placeholder="declared scope — what exactly did you review?"
+                value={scope}
+                onChange={(e) => setScope(e.target.value)}
+              />
+              <button
+                type="button"
+                disabled={submitting || selected.size === 0 || !attestedBy || !scope}
+                onClick={() => void clear()}
+              >
+                {submitting
+                  ? "Attesting…"
+                  : `Clear ${selected.size} item${selected.size === 1 ? "" : "s"}`}
+              </button>
+            </div>
+          )}
+          {error && <p className="error-text">Attestation failed: {error}</p>}
+          <p className="muted small">
+            Clearing records an <em>accept</em> attestation naming these decisions. A named human
+            is required; approval is scoped, never total.
+          </p>
+        </>
+      )}
+    </section>
+  );
+}
+
 interface Props {
   runId: string;
   onBack: () => void;
@@ -246,6 +382,8 @@ export default function RunDetail({ runId, onBack }: Props) {
           </table>
         )}
       </section>
+
+      <ReviewDebtSection detail={detail} onAttested={setDetail} />
 
       <section className="panel">
         <h2>Risk signals</h2>

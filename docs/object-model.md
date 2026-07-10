@@ -91,6 +91,30 @@ may be an assistant; only the named human in `attested_by` makes it real).
 `subject_digest` pins exactly which stored run record was attested. Recorded
 via `POST /api/runs/{id}/attestations`; counted by `aro_attestations_total`.
 
+`clears_decisions` binds the attestation to the specific `needs_review`
+PolicyDecision ids it consumes. The API rejects ids that are not real
+needs_review decisions of the run, and rejects any clearing on a `reject`
+attestation. An empty list is a run-level endorsement that consumes nothing —
+standing behind a run as a whole is not the same act as reviewing a specific
+flagged step.
+
+**ReviewDebtItem** (derived, never stored) — one unit of review debt with a
+consumable status. A debt item exists for every `needs_review` decision and is
+`cleared` iff an accept/amend attestation names it; the first clearing
+attestation wins. The recorded run stays immutable — clearing debt is a *new
+fact* (the attestation), not an edit. Derivation: `compute_review_debt()` in
+`aro_schema/review_debt.py`; surfaced at `GET /api/runs/{id}/review-debt`
+(filterable by `?status=open`) and in the dashboard's Review debt panel.
+
+Three consumption rules, stated once:
+
+1. **reject clears nothing** — the seat stays visibly empty (stillmirror's
+   "silence is not assent", applied to refusal);
+2. **run-level attestations clear nothing** — per-item debt requires per-item
+   review;
+3. **debt is consumed at most once** — re-clearing an already-cleared item is
+   a recorded fact but does not recount in `aro_review_debt_cleared_total`.
+
 **AgentRun.verdict** (derived) — wutai-style trust roll-up over the run's
 policy decisions: any deny → `blocked`, else any needs_review →
 `review_required`, else `trusted`. Serialized into every run JSON.

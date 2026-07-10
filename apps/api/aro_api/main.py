@@ -15,9 +15,20 @@ from pathlib import Path
 
 from aro_runtime import CompositeHooks, Workspace, discover_examples, replay_trace, run_example
 from aro_runtime.store import create_store
-from aro_schema import Attestation, AttestationDecision, digest_text, utcnow
+from aro_schema import (
+    Attestation,
+    AttestationDecision,
+    Decision,
+    compute_review_debt,
+    digest_text,
+    utcnow,
+)
 from aro_telemetry import MetricsHooks, TracingHooks, render_metrics, setup_tracing
-from aro_telemetry.metrics import ATTESTATIONS_TOTAL, RATE_LIMITED_TOTAL
+from aro_telemetry.metrics import (
+    ATTESTATIONS_TOTAL,
+    RATE_LIMITED_TOTAL,
+    REVIEW_DEBT_CLEARED_TOTAL,
+)
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -41,6 +52,9 @@ class CreateAttestationRequest(BaseModel):
     proposed_by: str | None = None
     seat_id: str | None = None
     note: str = ""
+    # Ids of needs_review PolicyDecisions this attestation clears (see
+    # docs/object-model.md — reject cannot clear; unknown ids are rejected).
+    clears_decisions: list[str] = []
 
 
 class _RateLimiter:
@@ -147,19 +161,54 @@ def create_app(
         record = store.get_run(run_id)
         if record is None:
             raise HTTPException(404, f"unknown run: {run_id}")
+        attestations = store.list_attestations(run_id)
         return {
             "run": record["run"].model_dump(mode="json"),
             "task": record["task"].model_dump(mode="json"),
             "example": record["example"],
             "trace_path": record["trace_path"],
-            "attestations": [a.model_dump(mode="json") for a in store.list_attestations(run_id)],
+            "attestations": [a.model_dump(mode="json") for a in attestations],
+            "review_debt": [
+                item.model_dump(mode="json")
+                for item in compute_review_debt(record["run"], attestations)
+            ],
         }
+
+    @app.get("/api/runs/{run_id}/review-debt")
+    def get_review_debt(run_id: str, status: str | None = None) -> list[dict]:
+        record = store.get_run(run_id)
+        if record is None:
+            raise HTTPException(404, f"unknown run: {run_id}")
+        items = compute_review_debt(record["run"], store.list_attestations(run_id))
+        if status:
+            items = [item for item in items if item.status == status]
+        return [item.model_dump(mode="json") for item in items]
 
     @app.post("/api/runs/{run_id}/attestations")
     def create_attestation(run_id: str, request: CreateAttestationRequest) -> dict:
         record = store.get_run(run_id)
         if record is None:
             raise HTTPException(404, f"unknown run: {run_id}")
+        if request.clears_decisions:
+            # A reject leaves the seat empty; it cannot consume debt.
+            if request.decision == AttestationDecision.REJECT:
+                raise HTTPException(422, "a reject attestation cannot clear review debt items")
+            # Every cleared id must be a real needs_review decision on this run.
+            reviewable = {
+                d.id for d in record["run"].policy_decisions if d.decision == Decision.NEEDS_REVIEW
+            }
+            unknown = [d for d in request.clears_decisions if d not in reviewable]
+            if unknown:
+                raise HTTPException(
+                    422,
+                    f"not needs_review decisions of run {run_id}: {', '.join(unknown)}",
+                )
+        existing = store.list_attestations(run_id)
+        already_cleared = {
+            item.decision_id
+            for item in compute_review_debt(record["run"], existing)
+            if item.status == "cleared"
+        }
         attestation = Attestation(
             id=f"att-{uuid.uuid4().hex[:12]}",
             run_id=run_id,
@@ -174,9 +223,15 @@ def create_app(
             # What exactly is being attested: the stored run record, by digest.
             subject_digest=digest_text(record["run"].model_dump_json()),
             attested_at=utcnow(),
+            clears_decisions=request.clears_decisions,
         )
         store.save_attestation(attestation)
         ATTESTATIONS_TOTAL.labels(decision=attestation.decision.value).inc()
+        # Count each debt item's consumption once, at first clearing.
+        rules_by_decision = {d.id: d.rule_id for d in record["run"].policy_decisions}
+        for decision_id in attestation.clears_decisions:
+            if decision_id not in already_cleared:
+                REVIEW_DEBT_CLEARED_TOTAL.labels(rule_id=rules_by_decision[decision_id]).inc()
         return attestation.model_dump(mode="json")
 
     @app.get("/api/queue")

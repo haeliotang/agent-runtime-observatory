@@ -268,6 +268,30 @@ class Attestation(BaseModel):
     note: str = ""
     subject_digest: str
     attested_at: datetime = Field(default_factory=utcnow)
+    # The specific needs_review PolicyDecision ids this attestation clears.
+    # Debt consumption is per-item, not per-run: an empty list means the human
+    # stood behind the run as a whole without clearing any specific debt item.
+    # A `reject` attestation never clears debt (the seat stays visibly empty).
+    clears_decisions: list[str] = Field(default_factory=list)
+
+
+class ReviewDebtItem(BaseModel):
+    """One unit of review debt, with its consumable status.
+
+    Derived, never stored: a debt item exists for every needs_review
+    PolicyDecision on a run, and is `cleared` iff an accept/amend Attestation
+    names its decision id in `clears_decisions`. The recorded run stays
+    immutable; clearing debt is a new fact (the attestation), not an edit.
+    """
+
+    decision_id: str
+    run_id: str
+    step_index: int
+    rule_id: str
+    reason: str
+    status: str = "open"  # "open" | "cleared"
+    cleared_by: str | None = None  # attestation id
+    attested_by: str | None = None  # the named human on that attestation
 
 
 class StepDivergence(BaseModel):
