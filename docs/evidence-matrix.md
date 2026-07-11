@@ -52,7 +52,7 @@ Status legend: ✅ shipped & verifiable · ⚠️ shipped but bounded (read the 
 | 18 | Traces are tamper-**evident**, not tamper-**proof** (no signatures) | Stated in README "Failure cases"; replay proves evident (row 4); signing is **not shipped** | ❌ by design — signed work packets are a roadmap item |
 | 19 | The agent is a **deterministic scripted runner**; LLM-step recording is not shipped | `aro_runtime/tools.py` (in-process simulated tools); README says so | ❌ by design — roadmap |
 | 20 | wutai-clinic: preregistered paired-intervention audit harness, null-reporting, oracle positive control | `packages/clinic/` + its README; CI `clinic` job (`pytest packages/clinic/tests`) | ✅ gated by the `clinic` CI job. The package's internal figures (test count, oracle p-value) are owned by `packages/clinic` and not re-audited in this matrix |
-| 21 | The clinic verdicts are outsider-reproducible from the published packet, continuously | `credential_packet_v1` (v0.2.0 asset, sha256 `af6e4142…`); CI `release-evidence` job downloads it by fixed URL, checks the pinned SHA, verifies the 7/7 internal chain, and reproduces the verdict table on every push | ✅ standing gate, not a one-time check |
+| 21 | The clinic verdicts are outsider-reproducible from the published packet **and stay consistent with current source** | `credential_packet_v1` (v0.2.2 asset, sha256 `af6e4142…`); CI `release-evidence` job checks out current source, checks the pinned SHA, verifies files↔MANIFEST↔provenance, confirms the bundled verdict script is byte-identical to current source, and reproduces the table — every push | ✅ source-consistency gate, not just asset availability |
 
 ## Known gaps (registered, not hidden)
 
