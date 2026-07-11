@@ -222,7 +222,6 @@ def create_app(
                     422, f"not needs_review decisions of run {run_id}: {', '.join(unknown)}"
                 )
 
-        existing = store.list_attestations(run_id)
         try:
             attestation = Attestation(
                 id=f"att-{uuid.uuid4().hex[:12]}",
