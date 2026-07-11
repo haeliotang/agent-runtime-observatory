@@ -58,9 +58,7 @@ def _canonical_subject(run: AgentRun, version: int) -> dict[str, Any]:
             "task_id": run.task_id,
             "agent": run.agent,
             "model": run.model,
-            "reviewer_seats": [
-                [s.id, s.name, s.role, s.scope] for s in run.reviewer_seats
-            ],
+            "reviewer_seats": [[s.id, s.name, s.role, s.scope] for s in run.reviewer_seats],
             "steps": [[s.index, s.input_digest, s.output_digest, s.error] for s in run.steps],
             "policy_decisions": [
                 [d.id, d.step_index, d.policy_id, d.rule_id, d.decision.value, d.reason]
