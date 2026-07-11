@@ -27,7 +27,7 @@ from aro_telemetry import MetricsHooks, TracingHooks, render_metrics, setup_trac
 from aro_telemetry.metrics import (
     ATTESTATIONS_TOTAL,
     RATE_LIMITED_TOTAL,
-    REVIEW_DEBT_CLEARED_TOTAL,
+    refresh_review_debt_gauges,
 )
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -92,7 +92,7 @@ def create_app(
         rate_limit_per_minute = int(os.environ.get("ARO_RATE_LIMIT_PER_MINUTE", "120"))
 
     setup_tracing("aro-api")
-    app = FastAPI(title="agent-runtime-observatory", version="0.1.0")
+    app = FastAPI(title="agent-runtime-observatory", version="0.2.3")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173"],
@@ -121,6 +121,14 @@ def create_app(
 
     @app.get("/metrics")
     def metrics() -> Response:
+        # Derive review-debt gauges from current store state at scrape time
+        # (race-free; reflects reopened debt after a run is overwritten).
+        items = [
+            (item, run.finished_at)
+            for run in store.all_runs()
+            for item in compute_review_debt(run, store.list_attestations(run.id))
+        ]
+        refresh_review_debt_gauges(items)
         payload, content_type = render_metrics()
         return Response(content=payload, media_type=content_type)
 
@@ -214,12 +222,6 @@ def create_app(
                     422, f"not needs_review decisions of run {run_id}: {', '.join(unknown)}"
                 )
 
-        existing = store.list_attestations(run_id)
-        before = {
-            item.decision_id
-            for item in compute_review_debt(run, existing)
-            if item.status == "cleared"
-        }
         try:
             attestation = Attestation(
                 id=f"att-{uuid.uuid4().hex[:12]}",
@@ -244,11 +246,9 @@ def create_app(
 
         store.save_attestation(attestation)
         ATTESTATIONS_TOTAL.labels(decision=attestation.decision.value).inc()
-        # Count only items that actually transitioned open -> cleared under this
-        # attestation: idempotent by construction (re-clearing changes nothing).
-        for item in compute_review_debt(run, [*existing, attestation]):
-            if item.status == "cleared" and item.decision_id not in before:
-                REVIEW_DEBT_CLEARED_TOTAL.labels(rule_id=item.rule_id).inc()
+        # No per-request debt counting: the cleared/open/stale gauges are derived
+        # from store state at scrape time (see /metrics), so concurrent clears
+        # cannot double-count and reopened debt is reflected automatically.
         return attestation.model_dump(mode="json")
 
     @app.get("/api/queue")

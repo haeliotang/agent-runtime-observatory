@@ -126,62 +126,103 @@ def test_unknown_seat_is_rejected_but_declared_seat_is_accepted(client):
     assert client.get(f"/api/runs/{run_id}/review-debt?status=open").json() == []
 
 
-def test_duplicate_ids_in_one_request_count_once(client):
-    # Finding 3: passing the same decision id twice must not double-count.
+def _gauge(client, name: str, run_id: str) -> float:
+    """Read a per-run review-debt gauge by scoping to a run with exactly one
+    known needs_review item. The gauges are store-wide, so we assert deltas /
+    single-run isolation via a fresh data dir per test (the `client` fixture)."""
+    for ln in client.get("/metrics").text.splitlines():
+        if ln.startswith(name + "{") and "review-sensitive-read" in ln:
+            return float(ln.split()[-1])
+    return 0.0
+
+
+def _oldest_open_age(client) -> float:
+    for ln in client.get("/metrics").text.splitlines():
+        if ln.startswith("aro_review_debt_oldest_open_age_seconds "):  # value line, not "# HELP"
+            return float(ln.split()[-1])
+    return 0.0
+
+
+def test_gauges_reflect_open_then_cleared(client):
     run_id, debt = _violation_run(client)
-    did = debt[0]["decision_id"]
-
-    def cleared_value() -> float:
-        for ln in client.get("/metrics").text.splitlines():
-            if ln.startswith("aro_review_debt_cleared_total{") and "review-sensitive-read" in ln:
-                return float(ln.split()[-1])
-        return 0.0
-
-    before = cleared_value()
-    resp = client.post(
+    assert _gauge(client, "aro_review_debt_open", run_id) == 1.0
+    assert _gauge(client, "aro_review_debt_cleared", run_id) == 0.0
+    assert _oldest_open_age(client) > 0.0  # an open item has a real age
+    client.post(
         f"/api/runs/{run_id}/attestations",
         json={
             "decision": "accept",
             "declared_scope": "s",
             "attested_by": "Hao",
-            "clears_decisions": [did, did, did],
+            "clears_decisions": [debt[0]["decision_id"]],
         },
     )
-    assert resp.status_code == 200
-    assert cleared_value() == before + 1.0  # not +3
+    assert _gauge(client, "aro_review_debt_open", run_id) == 0.0
+    assert _gauge(client, "aro_review_debt_cleared", run_id) == 1.0
 
 
-def test_cleared_metric_counts_once(client):
+def test_duplicate_ids_do_not_double_count(client):
+    # Finding 3: same id three times in one request -> cleared gauge is 1, not 3.
+    run_id, debt = _violation_run(client)
+    client.post(
+        f"/api/runs/{run_id}/attestations",
+        json={
+            "decision": "accept",
+            "declared_scope": "s",
+            "attested_by": "Hao",
+            "clears_decisions": [debt[0]["decision_id"]] * 3,
+        },
+    )
+    assert _gauge(client, "aro_review_debt_cleared", run_id) == 1.0
+    assert _gauge(client, "aro_review_debt_open", run_id) == 0.0
+
+
+def test_concurrent_clears_do_not_double_count(client):
+    # Finding 1: 24 concurrent clears of one item -> cleared gauge stays 1.
+    import threading
+
     run_id, debt = _violation_run(client)
     body = {
         "decision": "accept",
-        "declared_scope": "x",
+        "declared_scope": "s",
         "attested_by": "Hao",
         "clears_decisions": [debt[0]["decision_id"]],
     }
-    client.post(f"/api/runs/{run_id}/attestations", json=body)
-    client.post(f"/api/runs/{run_id}/attestations", json=body)  # re-clear: recorded, not recounted
+    threads = [
+        threading.Thread(target=lambda: client.post(f"/api/runs/{run_id}/attestations", json=body))
+        for _ in range(24)
+    ]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert _gauge(client, "aro_review_debt_cleared", run_id) == 1.0  # was up to 24 with the counter
+    assert _gauge(client, "aro_review_debt_open", run_id) == 0.0
 
-    metrics = client.get("/metrics").text
-    line = next(
-        ln
-        for ln in metrics.splitlines()
-        if ln.startswith("aro_review_debt_cleared_total{") and "review-sensitive-read" in ln
-    )
-    # global registry persists across tests in-process; per-run consumption
-    # counted once means the counter moved by exactly 1 for this test's run —
-    # so it must be a whole number (sanity) and the second post added nothing.
-    value_after = float(line.split()[-1])
 
-    run2, debt2 = _violation_run(client)
+def test_overwriting_a_run_reopens_debt_in_the_gauge(client, examples_dir, tmp_path):
+    # Finding 2: after a cleared run is overwritten, the gauge must reopen it —
+    # a monotonic counter could not. state -> cleared, then overwrite -> open+stale.
+    from aro_runtime import discover_examples, run_example
+    from aro_runtime.store import create_store
+
+    run_id, debt = _violation_run(client)
     client.post(
-        f"/api/runs/{run2}/attestations",
-        json={**body, "clears_decisions": [debt2[0]["decision_id"]]},
+        f"/api/runs/{run_id}/attestations",
+        json={
+            "decision": "accept",
+            "declared_scope": "s",
+            "attested_by": "Hao",
+            "clears_decisions": [debt[0]["decision_id"]],
+        },
     )
-    metrics2 = client.get("/metrics").text
-    line2 = next(
-        ln
-        for ln in metrics2.splitlines()
-        if ln.startswith("aro_review_debt_cleared_total{") and "review-sensitive-read" in ln
-    )
-    assert float(line2.split()[-1]) == value_after + 1.0
+    assert _gauge(client, "aro_review_debt_cleared", run_id) == 1.0
+
+    # overwrite the stored run with a fresh execution (new digest)
+    store = create_store(sqlite_path=tmp_path / "aro.db")
+    ex = discover_examples(examples_dir)["policy-violation-run"]
+    store.save_run(run_example(ex, run_id=run_id), ex.script.task, example="policy-violation-run")
+
+    assert _gauge(client, "aro_review_debt_open", run_id) == 1.0
+    assert _gauge(client, "aro_review_debt_stale", run_id) == 1.0
+    assert _gauge(client, "aro_review_debt_cleared", run_id) == 0.0

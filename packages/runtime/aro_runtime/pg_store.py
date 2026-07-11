@@ -107,6 +107,10 @@ class PostgresRunStore:
         ).fetchall()
         return [dict(row) for row in rows]
 
+    def all_runs(self) -> list[AgentRun]:
+        rows = self._conn.execute("SELECT run_json FROM runs").fetchall()
+        return [AgentRun.model_validate_json(row["run_json"]) for row in rows]
+
     def enqueue(self, run_id: str, example: str) -> int:
         row = self._conn.execute(
             "INSERT INTO queue (run_id, example, status, attempts, enqueued_at) "

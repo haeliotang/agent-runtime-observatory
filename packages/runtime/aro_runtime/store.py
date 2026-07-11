@@ -138,6 +138,12 @@ class RunStore:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def all_runs(self) -> list[AgentRun]:
+        """Every stored run, fully parsed — used to derive review-debt gauges."""
+        with self._lock:
+            rows = self._conn.execute("SELECT run_json FROM runs").fetchall()
+        return [AgentRun.model_validate_json(row["run_json"]) for row in rows]
+
     def enqueue(self, run_id: str, example: str) -> int:
         with self._lock:
             cur = self._conn.execute(

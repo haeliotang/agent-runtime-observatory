@@ -106,9 +106,9 @@ item is individually consumable: an **Attestation**
 (`POST /api/runs/{id}/attestations`) by a named human names the specific
 `needs_review` decisions it clears (`clears_decisions`), with a declared and
 an explicitly excluded scope — approval is never total. A `reject` clears
-nothing (the seat stays visibly empty), and outstanding debt is measurable:
-`aro_review_debt_total` − `aro_review_debt_cleared_total`, per-run at
-`GET /api/runs/{id}/review-debt?status=open`.
+nothing (the seat stays visibly empty), and outstanding debt is a store-derived
+gauge (`aro_review_debt_open`, race-free and reopening when a run is
+overwritten), per-run at `GET /api/runs/{id}/review-debt?status=open`.
 
 The consumption is guarded, not just declared. Clearing is **bound to the
 exact record reviewed** by digest: overwrite the run afterward and the debt

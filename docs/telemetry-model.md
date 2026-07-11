@@ -45,15 +45,19 @@ These names are a public contract — the Grafana dashboard in
 | `aro_queue_dead_letters_total` | counter | — | queue items dead-lettered after exhausting retries |
 | `aro_rate_limited_total` | counter | — | run-creation requests rejected with 429 |
 | `aro_attestations_total` | counter | `decision` | human attestations recorded (accept / amend / reject) |
-| `aro_review_debt_cleared_total` | counter | `rule_id` | review-debt items consumed by an accept/amend attestation naming them (first clearing only) |
+| `aro_review_debt_open` | gauge | `rule_id` | review-debt items currently open, derived from store state at scrape time |
+| `aro_review_debt_cleared` | gauge | `rule_id` | items currently cleared by a valid attestation (falls when a run is overwritten) |
+| `aro_review_debt_stale` | gauge | `rule_id` | open items whose only naming attestation is digest-stale |
+| `aro_review_debt_oldest_open_age_seconds` | gauge | — | age of the oldest open item (0 if none) |
 
-`aro_review_debt_total` / `aro_review_debt_cleared_total` are the governance
-pair: created counts the gap between "the system let it happen" and "a human
-has looked at *this item*"; cleared counts actual per-item consumption (an
-accept/amend attestation naming the specific needs_review decision). Their
-difference — summed across all scraped jobs, since debt is created wherever
-the step ran but cleared in the api — is outstanding debt, SLO #6 in
-[slo.md](slo.md). A healthy deployment trends it to zero via review, not via
+`aro_review_debt_total` (a counter) records debt *creation* per step. Debt
+*consumption* is not a counter — it is the store-derived gauge family above,
+set by the api's `/metrics` handler from actual state at scrape time. This is
+deliberate: a monotonic counter double-counts under concurrent clears and can
+never be undone, so it cannot represent debt that *reopens* when a run is
+overwritten. `aro_review_debt_open` is outstanding debt directly (query the api
+job); `aro_review_debt_stale` surfaces digest drift; SLO #6 in [slo.md](slo.md)
+watches these. A healthy deployment trends open to zero via review, not via
 loosening rules.
 
 ## Logs
