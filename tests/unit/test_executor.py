@@ -5,6 +5,7 @@ from aro_schema import RunStatus
 BASE_SCRIPT = {
     "task": {"id": "t1", "title": "test", "goal_id": "g1"},
     "goal": {"id": "g1", "statement": "test goal", "owner_seat_id": "seat-1"},
+    "reviewer_seats": [{"id": "seat-1", "name": "owner", "role": "owner", "scope": "test"}],
     "steps": [],
 }
 
@@ -28,6 +29,14 @@ DENY_SHELL_POLICY = Policy.model_validate(
 
 def make_script(steps):
     return Script.model_validate({**BASE_SCRIPT, "steps": steps})
+
+
+def test_script_rejects_owner_seat_not_declared():
+    import pytest
+
+    # goal.owner_seat_id "seat-1" is not among an empty reviewer_seats list
+    with pytest.raises(ValueError, match="not a declared"):
+        Script.model_validate({**BASE_SCRIPT, "reviewer_seats": [], "steps": []})
 
 
 def test_step_output_reference_interpolation():

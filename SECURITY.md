@@ -37,8 +37,9 @@ Because the API is unauthenticated, `attested_by` on an attestation is a
 **self-declared** name within the trusted interior — the substrate records
 *who a human said they were*, not a verified identity. The API still refuses
 the failures that would make the record a lie: a blank name or scope is
-rejected, a `seat_id` (when given) must reference a seat the run actually
-declared, and clearing is bound to the reviewed record by digest (see below).
+rejected, clearing a specific debt item requires a `seat_id` that references a
+seat the run actually declared, and clearing is bound to the reviewed content
+by a versioned canonical digest (see docs/object-model.md).
 Verified identity requires the authenticating gateway above; binding an
 attestation to an authenticated principal is out of scope for a reference
 substrate.

@@ -200,12 +200,11 @@ def create_app(
         run = record["run"]
 
         # Identity is self-declared within the trusted interior (the API is
-        # unauthenticated — see SECURITY.md). We can still refuse the two things
-        # that would make the record a lie: a blank human, and a seat that this
-        # run never declared.
-        if request.seat_id is not None and request.seat_id not in {
-            seat.id for seat in run.reviewer_seats
-        }:
+        # unauthenticated — see SECURITY.md). We can still refuse the things that
+        # would make the record a lie: a seat this run never declared, and
+        # (below) clearing a specific debt item without naming an accountable seat.
+        seat_ids = {seat.id for seat in run.reviewer_seats}
+        if request.seat_id is not None and request.seat_id not in seat_ids:
             raise HTTPException(
                 422, f"seat_id {request.seat_id!r} is not a reviewer seat of run {run_id}"
             )
@@ -213,6 +212,10 @@ def create_app(
         # Dedup within the request so one call cannot double-count a clearing.
         clears = list(dict.fromkeys(request.clears_decisions))
         if clears:
+            if request.seat_id is None:
+                raise HTTPException(
+                    422, "clearing a specific review-debt item requires an accountable seat_id"
+                )
             if request.decision == AttestationDecision.REJECT:
                 raise HTTPException(422, "a reject attestation cannot clear review debt items")
             reviewable = {d.id for d in run.policy_decisions if d.decision == Decision.NEEDS_REVIEW}
