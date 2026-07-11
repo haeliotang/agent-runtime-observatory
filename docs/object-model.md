@@ -114,9 +114,11 @@ Five consumption rules, stated once:
    "silence is not assent", applied to refusal);
 2. **run-level attestations clear nothing** — per-item debt requires per-item
    review;
-3. **debt is consumed at most once** — re-clearing an already-cleared item, or
-   naming the same id twice in one request, is recorded but does not recount in
-   `aro_review_debt_cleared_total`;
+3. **debt state is derived, not counted** — open/cleared/stale are computed
+   from the store at scrape time (`aro_review_debt_open` / `_cleared` / `_stale`
+   gauges), so re-clearing, naming the same id twice, or 24 concurrent clears
+   all leave the item cleared exactly once, and a reopened debt is reflected —
+   things a monotonic counter cannot do;
 4. **clearing is digest-bound** — an attestation clears only the exact run it
    reviewed; if the run is later overwritten, the digest no longer matches, the
    item reopens, and it is flagged `stale_attestation` (drift is surfaced, not

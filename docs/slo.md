@@ -15,7 +15,7 @@ part most agent stacks don't have.
 | 3 | Run latency | `histogram_quantile(0.95, sum(rate(aro_run_duration_seconds_bucket[5m])) by (le))` | p95 < 1s (scripted runtime) | 7d |
 | 4 | Queue health | `aro_queue_dead_letters_total` increase | 0 dead letters | 7d |
 | 5 | **Replay integrity** | golden replay divergences in CI | **0 — hard gate, not a ratio** | every commit |
-| 6 | **Review debt consumption** | `sum(increase(aro_review_debt_total[7d])) - sum(increase(aro_review_debt_cleared_total[7d]))` — actual per-item consumption, not a count comparison | every `needs_review` item cleared by a named attestation within 7d | 7d |
+| 6 | **Review debt consumption** | `sum(aro_review_debt_open)` and `max(aro_review_debt_oldest_open_age_seconds)` — store-derived gauges (not a counter subtraction), so an overwritten run reopens its debt and the SLO reflects it | zero open items, and oldest open item younger than 7d | 7d |
 
 ## Error budgets and their consequences
 
@@ -34,14 +34,16 @@ part most agent stacks don't have.
   monitored as a ratio — a divergence blocks merge.
 - **#6 Review debt (governance SLO).** `needs_review` steps execute; the debt
   is the gap between "the system allowed it" and "a named human looked at
-  *this item*". The SLI pairs per-item debt creation (`aro_review_debt_total`)
-  with per-item consumption (`aro_review_debt_cleared_total` — incremented
-  only when an accept/amend attestation names a specific needs_review
-  decision, and only on first clearing). Sum both across all scraped jobs:
-  debt is created in whichever process ran the step (api or worker); it is
-  cleared in the api process. A healthy deployment trends the difference to
-  zero via attestations — never by loosening rules. Per-run open items:
-  `GET /api/runs/{id}/review-debt?status=open`.
+  *this item*". Outstanding debt is a **store-derived gauge**, not a counter
+  subtraction: at scrape time the api derives `aro_review_debt_open`,
+  `aro_review_debt_cleared`, `aro_review_debt_stale` (by rule) and
+  `aro_review_debt_oldest_open_age_seconds` from actual state. This is
+  race-free (no per-request increment to double-count) and, unlike a monotonic
+  counter, **rises again when a run is overwritten and its debt reopens** — so
+  a stale attestation cannot keep the SLO green. Query the api job (the gauges
+  reflect every run in the shared store); use `max()` for the age gauge. A
+  healthy deployment trends open items to zero via attestations — never by
+  loosening rules. Per-run open items: `GET /api/runs/{id}/review-debt?status=open`.
 
 ## Alerting sketch
 
@@ -60,10 +62,11 @@ groups:
             / sum(rate(aro_runs_total[1h])) > 0.01
         for: 30m
         labels: {severity: warn}
+      - alert: AroReviewDebtOutstanding
+        expr: max(aro_review_debt_oldest_open_age_seconds) > 7 * 24 * 3600
+        labels: {severity: warn}
       - alert: AroReviewDebtStale
-        expr: |
-          sum(increase(aro_review_debt_total[7d]))
-            > sum(increase(aro_review_debt_cleared_total[7d]))
+        expr: sum(aro_review_debt_stale) > 0
         labels: {severity: warn}
 ```
 
