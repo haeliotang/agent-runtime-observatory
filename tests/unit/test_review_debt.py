@@ -119,6 +119,24 @@ def test_fresh_attestation_beats_a_stale_one_for_same_item():
     assert item.stale_attestation is False
 
 
+def test_subject_digest_is_versioned_and_content_bound():
+    # Finding 4: the digest is over the immutable canonical subject, so adding a
+    # defaulted field to AgentRun does NOT stale historical attestations, while
+    # changing reviewed content does.
+    from aro_schema import Coverage, ReviewerSeat, StepRecord
+
+    run = _run(_decision(1, Decision.NEEDS_REVIEW))
+    d1 = run_subject_digest(run)
+    assert d1.startswith("v1:sha256:")
+
+    run.coverage = Coverage(captured=["x"])
+    run.reviewer_seats = [ReviewerSeat(id="s", name="n", role="r", scope="sc")]
+    assert run_subject_digest(run) == d1  # schema additions do not change the subject
+
+    run.steps.append(StepRecord(index=0, name="t", input_digest="sha256:" + "a" * 64))
+    assert run_subject_digest(run) != d1  # changing step content does
+
+
 def test_blank_identity_or_scope_is_refused_by_the_schema():
     run = _run(_decision(1, Decision.NEEDS_REVIEW))
     for bad in ({"attested_by": "  "}, {"declared_scope": ""}):

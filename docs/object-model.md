@@ -119,15 +119,22 @@ Five consumption rules, stated once:
    gauges), so re-clearing, naming the same id twice, or 24 concurrent clears
    all leave the item cleared exactly once, and a reopened debt is reflected —
    things a monotonic counter cannot do;
-4. **clearing is digest-bound** — an attestation clears only the exact run it
-   reviewed; if the run is later overwritten, the digest no longer matches, the
-   item reopens, and it is flagged `stale_attestation` (drift is surfaced, not
-   silently honored);
-5. **identity is refused when blank or forged** — a blank `attested_by` /
-   `declared_scope` is rejected, and a `seat_id` must reference a seat the run
-   declared. Identity is still *self-declared*, not authenticated (the API has
-   no auth — see [SECURITY.md](../SECURITY.md)); the substrate records who a
-   human said they were, and refuses the cases that would make even that a lie.
+4. **clearing is content-bound, not serialization-bound** — the attestation's
+   `subject_digest` is over a *versioned canonical subject* (run id, per-step
+   input/output digests and error, policy decisions), not the raw run JSON. So
+   adding a defaulted field to `AgentRun` does **not** stale historical
+   attestations (finding 4), while replacing the run with *different content*
+   reopens the debt, flagged `stale_attestation`. The version is carried in the
+   digest (`v1:sha256:…`); an attestation is always compared under the version
+   it was written with, so a future `v2` never auto-stales `v1`;
+5. **accountability is structural** — a blank `attested_by` / `declared_scope`
+   is rejected; clearing a *specific* debt item **requires** a `seat_id`, which
+   must reference a seat the run declared; and a `Goal.owner_seat_id` must be a
+   declared reviewer seat (enforced on the `Script`). Identity is still
+   *self-declared*, not authenticated (the API has no auth — see
+   [SECURITY.md](../SECURITY.md)); the substrate records who a human said they
+   were and which declared seat they cleared under, and refuses the cases that
+   would make even that a lie.
 
 **AgentRun.verdict** (derived) — wutai-style trust roll-up over the run's
 policy decisions: any deny → `blocked`, else any needs_review →

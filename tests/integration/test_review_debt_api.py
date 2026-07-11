@@ -33,6 +33,7 @@ def test_debt_opens_then_clears_to_zero(client):
             "decision": "accept",
             "declared_scope": "I reviewed the flagged .env read; it is the fixture.",
             "attested_by": "Hao",
+            "seat_id": "seat-security",
             "clears_decisions": [item["decision_id"]],
         },
     )
@@ -57,6 +58,7 @@ def test_reject_cannot_clear(client):
             "decision": "reject",
             "declared_scope": "x",
             "attested_by": "Hao",
+            "seat_id": "seat-security",
             "clears_decisions": [debt[0]["decision_id"]],
         },
     )
@@ -74,6 +76,7 @@ def test_unknown_or_non_review_decision_rejected(client):
                 "decision": "accept",
                 "declared_scope": "x",
                 "attested_by": "Hao",
+                "seat_id": "seat-security",
                 "clears_decisions": [bad],
             },
         )
@@ -89,9 +92,25 @@ def test_blank_identity_is_rejected(client):
     ):
         response = client.post(
             f"/api/runs/{run_id}/attestations",
-            json={**body, "clears_decisions": [debt[0]["decision_id"]]},
+            json={**body, "seat_id": "seat-security", "clears_decisions": [debt[0]["decision_id"]]},
         )
         assert response.status_code == 422, body
+    assert client.get(f"/api/runs/{run_id}/review-debt?status=open").json() != []
+
+
+def test_clearing_a_specific_item_requires_a_seat(client):
+    # Finding 3: clearing a specific debt item must name an accountable seat.
+    run_id, debt = _violation_run(client)
+    resp = client.post(
+        f"/api/runs/{run_id}/attestations",
+        json={
+            "decision": "accept",
+            "declared_scope": "s",
+            "attested_by": "Hao",
+            "clears_decisions": [debt[0]["decision_id"]],  # no seat_id
+        },
+    )
+    assert resp.status_code == 422
     assert client.get(f"/api/runs/{run_id}/review-debt?status=open").json() != []
 
 
@@ -154,6 +173,7 @@ def test_gauges_reflect_open_then_cleared(client):
             "decision": "accept",
             "declared_scope": "s",
             "attested_by": "Hao",
+            "seat_id": "seat-security",
             "clears_decisions": [debt[0]["decision_id"]],
         },
     )
@@ -170,6 +190,7 @@ def test_duplicate_ids_do_not_double_count(client):
             "decision": "accept",
             "declared_scope": "s",
             "attested_by": "Hao",
+            "seat_id": "seat-security",
             "clears_decisions": [debt[0]["decision_id"]] * 3,
         },
     )
@@ -186,6 +207,7 @@ def test_concurrent_clears_do_not_double_count(client):
         "decision": "accept",
         "declared_scope": "s",
         "attested_by": "Hao",
+        "seat_id": "seat-security",
         "clears_decisions": [debt[0]["decision_id"]],
     }
     threads = [
@@ -200,10 +222,11 @@ def test_concurrent_clears_do_not_double_count(client):
     assert _gauge(client, "aro_review_debt_open", run_id) == 0.0
 
 
-def test_overwriting_a_run_reopens_debt_in_the_gauge(client, examples_dir, tmp_path):
-    # Finding 2: after a cleared run is overwritten, the gauge must reopen it —
-    # a monotonic counter could not. state -> cleared, then overwrite -> open+stale.
-    from aro_runtime import discover_examples, run_example
+def test_overwriting_a_run_with_different_content_reopens_debt(client, examples_dir, tmp_path):
+    # Finding 2 + 4: clearing is bound to the reviewed *content* (versioned
+    # canonical subject), not to a serialization. Replacing the run with
+    # DIFFERENT content must reopen the debt and flag it stale; an identical
+    # re-run would not (correctly — the human reviewed exactly that content).
     from aro_runtime.store import create_store
 
     run_id, debt = _violation_run(client)
@@ -213,15 +236,19 @@ def test_overwriting_a_run_reopens_debt_in_the_gauge(client, examples_dir, tmp_p
             "decision": "accept",
             "declared_scope": "s",
             "attested_by": "Hao",
+            "seat_id": "seat-security",
             "clears_decisions": [debt[0]["decision_id"]],
         },
     )
     assert _gauge(client, "aro_review_debt_cleared", run_id) == 1.0
 
-    # overwrite the stored run with a fresh execution (new digest)
+    # overwrite the stored run with genuinely different content (tamper a step
+    # output digest) — same needs_review decision id, different canonical subject
     store = create_store(sqlite_path=tmp_path / "aro.db")
-    ex = discover_examples(examples_dir)["policy-violation-run"]
-    store.save_run(run_example(ex, run_id=run_id), ex.script.task, example="policy-violation-run")
+    record = store.get_run(run_id)
+    run = record["run"]
+    run.steps[0].output_digest = "sha256:" + "0" * 64
+    store.save_run(run, record["task"], example=record["example"], trace_path=record["trace_path"])
 
     assert _gauge(client, "aro_review_debt_open", run_id) == 1.0
     assert _gauge(client, "aro_review_debt_stale", run_id) == 1.0
