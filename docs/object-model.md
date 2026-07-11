@@ -119,22 +119,28 @@ Five consumption rules, stated once:
    gauges), so re-clearing, naming the same id twice, or 24 concurrent clears
    all leave the item cleared exactly once, and a reopened debt is reflected —
    things a monotonic counter cannot do;
-4. **clearing is content-bound, not serialization-bound** — the attestation's
-   `subject_digest` is over a *versioned canonical subject* (run id, per-step
-   input/output digests and error, policy decisions), not the raw run JSON. So
-   adding a defaulted field to `AgentRun` does **not** stale historical
-   attestations (finding 4), while replacing the run with *different content*
-   reopens the debt, flagged `stale_attestation`. The version is carried in the
-   digest (`v1:sha256:…`); an attestation is always compared under the version
-   it was written with, so a future `v2` never auto-stales `v1`;
-5. **accountability is structural** — a blank `attested_by` / `declared_scope`
-   is rejected; clearing a *specific* debt item **requires** a `seat_id`, which
-   must reference a seat the run declared; and a `Goal.owner_seat_id` must be a
-   declared reviewer seat (enforced on the `Script`). Identity is still
-   *self-declared*, not authenticated (the API has no auth — see
-   [SECURITY.md](../SECURITY.md)); the substrate records who a human said they
-   were and which declared seat they cleared under, and refuses the cases that
-   would make even that a lie.
+4. **clearing is bound to a versioned canonical subject** — the attestation's
+   `subject_digest` is over an explicit per-version *allowlist* of the reviewed
+   record, not the raw run JSON (schema-fragile) and not a minimal core
+   (under-binding). `v2` binds run id, task id, agent, reviewer seats, per-step
+   digests/error, and the **full** policy decisions (id, policy_id, rule_id,
+   decision, reason); it excludes volatile fields (timestamps, verdict,
+   coverage). So changing a policy reason, or deleting the seat the human
+   cleared under, reopens the debt (flagged `stale_attestation`), while adding a
+   defaulted field does not spuriously stale. Version policy: new attestations
+   use `v2`; **`v1` clearing power is revoked** (it under-bound the record — no
+   seats, decision ids, policy_id, or reason), so a `v1` attestation is always
+   stale and must be re-attested; a future `v3` is an explicit decision about
+   whether `v2` keeps clearing power. What the digest does *not* bind (goal/task
+   prose) is registered in [limitations.md](limitations.md);
+5. **seats are non-vacuous and unique** — a `ReviewerSeat`'s id/name/role/scope
+   are all non-blank; a `Script`'s seat ids are unique (no two people sharing
+   one) and its `Goal.owner_seat_id` must be a declared seat. Clearing a
+   *specific* item **requires** a declared `seat_id`, and a blank `attested_by` /
+   `declared_scope` is rejected. Identity remains *self-declared*, not
+   authenticated, and a seat *reference* is not a seat *authorization* — both,
+   plus supersession, are registered boundaries in
+   [limitations.md](limitations.md), not silent gaps.
 
 **AgentRun.verdict** (derived) — wutai-style trust roll-up over the run's
 policy decisions: any deny → `blocked`, else any needs_review →

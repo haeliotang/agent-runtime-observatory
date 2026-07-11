@@ -39,6 +39,33 @@ def test_script_rejects_owner_seat_not_declared():
         Script.model_validate({**BASE_SCRIPT, "reviewer_seats": [], "steps": []})
 
 
+def test_script_rejects_blank_and_duplicate_seats():
+    import pytest
+
+    # round-6 finding 1: a blank-field seat is vacuous
+    with pytest.raises(ValueError, match="must not be blank"):
+        Script.model_validate(
+            {
+                **BASE_SCRIPT,
+                "goal": {"id": "g1", "statement": "s", "owner_seat_id": ""},
+                "reviewer_seats": [{"id": "", "name": "", "role": "", "scope": ""}],
+                "steps": [],
+            }
+        )
+    # round-6 finding 1: two people cannot share one seat id (ambiguous owner)
+    with pytest.raises(ValueError, match="duplicate reviewer seat ids"):
+        Script.model_validate(
+            {
+                **BASE_SCRIPT,
+                "reviewer_seats": [
+                    {"id": "seat-1", "name": "Alice", "role": "r", "scope": "x"},
+                    {"id": "seat-1", "name": "Bob", "role": "r", "scope": "x"},
+                ],
+                "steps": [],
+            }
+        )
+
+
 def test_step_output_reference_interpolation():
     script = make_script(
         [

@@ -96,12 +96,24 @@ EVIDENCE_ROLES = (
 
 
 class ReviewerSeat(BaseModel):
-    """A named human seat that carries accountability for a scope of agent work."""
+    """A named human seat that carries accountability for a scope of agent work.
+
+    Every field is non-blank: a seat with an empty id/name/role/scope is a
+    vacuous seat, and accountability that points at nothing is not
+    accountability. Uniqueness of ids within a run is enforced on the Script.
+    """
 
     id: str
     name: str
     role: str
     scope: str
+
+    @field_validator("id", "name", "role", "scope")
+    @classmethod
+    def _not_blank(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("reviewer seat fields (id, name, role, scope) must not be blank")
+        return value
 
 
 class Goal(BaseModel):
