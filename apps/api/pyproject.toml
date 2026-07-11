@@ -1,6 +1,6 @@
 [project]
 name = "aro-api"
-version = "0.1.0"
+version = "0.2.3"
 description = "FastAPI service exposing runs, traces, replay, and Prometheus metrics."
 requires-python = ">=3.11"
 dependencies = [

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wutai-clinic"
-version = "0.1.0"
+version = "0.2.3"
 description = "Runtime-verifiable paired-intervention audit harness for coding agents."
 readme = "README.md"
 license = { file = "LICENSE" }
