@@ -235,7 +235,7 @@ it has killed every deployable intervention it tested; sensitivity is calibrated
 an oracle positive control (Fisher p=0.0040). See its README for the full protocol.
 
 Its verdicts are outsider-reproducible without this repo's private history:
-**[credential_packet_v1](https://github.com/haeliotang/agent-runtime-observatory/releases/tag/v0.2.2)**
+**[credential_packet_v1](https://github.com/haeliotang/agent-runtime-observatory/releases/tag/credential-packet-v1)**
 (release asset, 28K, sha256 `af6e4142299b58cbfbeb67b3b357a6e438c272f7e074ee17b9c8e012a4dd01f1`)
 bundles the recorded official-eval reports with a closed SHA chain — download,
 verify, and re-derive the verdict table with stock `python3` per its `VERIFY.md`.

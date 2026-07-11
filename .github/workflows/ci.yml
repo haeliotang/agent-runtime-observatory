@@ -151,7 +151,7 @@ jobs:
     # published evidence drifts from the pinned digest OR from current source.
     runs-on: ubuntu-latest
     env:
-      PACKET_URL: https://github.com/haeliotang/agent-runtime-observatory/releases/download/v0.2.2/credential_packet_v1.tar.gz
+      PACKET_URL: https://github.com/haeliotang/agent-runtime-observatory/releases/download/credential-packet-v1/credential_packet_v1.tar.gz
       PACKET_SHA: af6e4142299b58cbfbeb67b3b357a6e438c272f7e074ee17b9c8e012a4dd01f1
     steps:
       - uses: actions/checkout@v4
