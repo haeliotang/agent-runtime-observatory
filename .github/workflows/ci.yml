@@ -143,28 +143,44 @@ jobs:
         run: docker compose -f infra/docker-compose.yml down -v
 
   release-evidence:
-    # Turns the credential packet from a one-time verification into a standing
-    # gate: download the published asset by fixed URL, check the pinned SHA,
-    # verify the internal SHA chain, and reproduce the verdict table — on every
-    # push. If the Release asset ever drifts from the pinned digest, CI goes red.
+    # A source-consistency gate, not just an asset-availability check: on every
+    # push it checks out the CURRENT source, downloads the published v0.2.2
+    # packet by fixed URL + pinned SHA, verifies the files<->MANIFEST<->provenance
+    # chain, confirms the packet's bundled verdict script is byte-identical to
+    # the current source, and reproduces the verdict table. Red CI if the
+    # published evidence drifts from the pinned digest OR from current source.
     runs-on: ubuntu-latest
     env:
-      PACKET_URL: https://github.com/haeliotang/agent-runtime-observatory/releases/download/v0.2.0/credential_packet_v1.tar.gz
+      PACKET_URL: https://github.com/haeliotang/agent-runtime-observatory/releases/download/v0.2.2/credential_packet_v1.tar.gz
       PACKET_SHA: af6e4142299b58cbfbeb67b3b357a6e438c272f7e074ee17b9c8e012a4dd01f1
     steps:
-      - name: Download the published packet and check the pinned SHA
+      - uses: actions/checkout@v4
+      - name: Download the published packet (v0.2.2) and check the pinned SHA
         run: |
           set -euo pipefail
           curl -fsSL "$PACKET_URL" -o packet.tar.gz
           echo "$PACKET_SHA  packet.tar.gz" | sha256sum -c -
-      - name: Verify the internal SHA chain and reproduce the verdict table
+      - name: Verify chain, provenance, source-consistency, and reproduce
         run: |
           set -euo pipefail
           tar xzf packet.tar.gz
           cd credential_packet_v1
-          # every file in MANIFEST hashes to its recorded sha256 (independent check)
+          # 1. files <-> MANIFEST: every bundled file hashes to its recorded sha256
           jq -r '.files[] | .sha256 + "  " + .path' MANIFEST.json | sha256sum -c -
-          # stock python3, no deps: reproduce the verdicts and guard doc drift
+          # 2. provenance <-> MANIFEST: every provenance source is a MANIFEST file
+          #    with the same sha (closes the report -> manifest -> file chain)
+          jq -r '.files[] | "\(.path) \(.sha256)"' MANIFEST.json | sort > /tmp/man.txt
+          jq -r '.provenance[]
+                 | (if .source and .sha256 then "models/\(.source) \(.sha256)" else empty end),
+                   (.lineage_sources[]? | select(.present) | "models/\(.source) \(.sha256)")' \
+            provenance.json | sort -u > /tmp/prov.txt
+          if [ -n "$(comm -23 /tmp/prov.txt /tmp/man.txt)" ]; then
+            echo "provenance rows not backed by MANIFEST:"; comm -23 /tmp/prov.txt /tmp/man.txt; exit 1
+          fi
+          # 3. the published packet's verdict script == CURRENT source (no drift)
+          diff run_intervention_verdict_demo.py \
+            "$GITHUB_WORKSPACE/packages/clinic/scripts/run_intervention_verdict_demo.py"
+          # 4. reproduce the verdict table (stock python3) + doc-drift guard
           python3 run_intervention_verdict_demo.py ./models | tee table.out >/dev/null
           grep -q "calibrated null" table.out
           grep -q "true positive" table.out
