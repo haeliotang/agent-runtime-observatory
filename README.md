@@ -110,13 +110,18 @@ nothing (the seat stays visibly empty), and outstanding debt is a store-derived
 gauge (`aro_review_debt_open`, race-free and reopening when a run is
 overwritten), per-run at `GET /api/runs/{id}/review-debt?status=open`.
 
-The consumption is guarded, not just declared. Clearing is **bound to the
-exact record reviewed** by digest: overwrite the run afterward and the debt
-reopens, flagged `stale_attestation`. A blank name or scope is refused, and a
-`seat_id` must reference a seat the run declared. Identity is still
-*self-declared, not authenticated* — the API has no auth ([SECURITY.md](SECURITY.md))
-— so the substrate records who a human said they were and refuses the cases
-that would make even that a lie. The object model is
+The consumption is guarded, not just declared. Clearing is bound by digest to a
+**versioned canonical subject** (`v2`) — run identity, reviewer seats, per-step
+digests, and the *full* policy decisions (id, policy_id, rule_id, decision,
+reason). Change any of those — or delete the seat the human cleared under — and
+the debt reopens, flagged `stale_attestation`; volatile fields (timestamps,
+verdict, coverage) are excluded so they don't spuriously stale. Blank or
+duplicate seats are rejected, and clearing a specific item requires a declared
+`seat_id`. What is **not** yet enforced is listed plainly in
+[docs/limitations.md](docs/limitations.md): identity is *self-declared, not
+authenticated* (the API has no auth — [SECURITY.md](SECURITY.md)); any declared
+seat may clear any scope (no per-scope authorization); and there is no
+attestation supersession/contested state. The object model is
 field-aligned with my sibling repos' models; see
 [docs/object-model-alignment.md](docs/object-model-alignment.md).
 

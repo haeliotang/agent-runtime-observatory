@@ -42,7 +42,7 @@ def test_attestation_flow(client):
         },
     ).json()
     assert created["decision"] == "accept"
-    assert created["subject_digest"].startswith("v1:sha256:")  # versioned canonical subject
+    assert created["subject_digest"].startswith("v2:sha256:")  # versioned canonical subject
 
     detail = client.get(f"/api/runs/{run_id}").json()
     assert len(detail["attestations"]) == 1

@@ -119,22 +119,56 @@ def test_fresh_attestation_beats_a_stale_one_for_same_item():
     assert item.stale_attestation is False
 
 
-def test_subject_digest_is_versioned_and_content_bound():
-    # Finding 4: the digest is over the immutable canonical subject, so adding a
-    # defaulted field to AgentRun does NOT stale historical attestations, while
-    # changing reviewed content does.
-    from aro_schema import Coverage, ReviewerSeat, StepRecord
+def test_v2_digest_binds_reviewed_content_excludes_volatile():
+    # v2 (round-6 fix): the digest binds what a human reviewed and excludes
+    # volatile/observability fields, so it neither under-binds (round 6 finding
+    # 2) nor over-binds/schema-stales (round 5 finding 4).
+    from aro_schema import Coverage, ReviewerSeat, StepRecord, utcnow
 
     run = _run(_decision(1, Decision.NEEDS_REVIEW))
-    d1 = run_subject_digest(run)
-    assert d1.startswith("v1:sha256:")
-
-    run.coverage = Coverage(captured=["x"])
     run.reviewer_seats = [ReviewerSeat(id="s", name="n", role="r", scope="sc")]
-    assert run_subject_digest(run) == d1  # schema additions do not change the subject
+    d = run_subject_digest(run)
+    assert d.startswith("v2:sha256:")
 
-    run.steps.append(StepRecord(index=0, name="t", input_digest="sha256:" + "a" * 64))
-    assert run_subject_digest(run) != d1  # changing step content does
+    # NOT bound: observability / volatile fields (no spurious staling)
+    run.coverage = Coverage(captured=["x"])
+    run.finished_at = utcnow()
+    assert run_subject_digest(run) == d
+
+    # bound: reviewer seats, policy reason, step content
+    run.reviewer_seats = []
+    assert run_subject_digest(run) != d  # finding 2a: seats are bound
+    run2 = _run(_decision(1, Decision.NEEDS_REVIEW))
+    base = run_subject_digest(run2)
+    run2.policy_decisions[0].reason = "different reason shown to the reviewer"
+    assert run_subject_digest(run2) != base  # finding 2b: reason is bound
+    run3 = _run(_decision(1, Decision.NEEDS_REVIEW))
+    b3 = run_subject_digest(run3)
+    run3.steps.append(StepRecord(index=0, name="t", input_digest="sha256:" + "a" * 64))
+    assert run_subject_digest(run3) != b3  # step content is bound
+
+
+def test_deleting_the_cleared_seat_reopens_debt():
+    # Round-6 finding 2: the seat a human cleared under cannot silently vanish.
+    from aro_schema import ReviewerSeat
+
+    run = _run(_decision(1, Decision.NEEDS_REVIEW))
+    run.reviewer_seats = [ReviewerSeat(id="sec", name="Sec", role="reviewer", scope="all")]
+    att = _attestation(run, AttestationDecision.ACCEPT, ["r1-pd-1"])
+    assert compute_review_debt(run, [att])[0].status == "cleared"
+    run.reviewer_seats = []
+    (item,) = compute_review_debt(run, [att])
+    assert item.status == "open" and item.stale_attestation is True
+
+
+def test_v1_attestation_never_clears():
+    # v1 clearing power is revoked; a v1-versioned subject is always stale.
+    run = _run(_decision(1, Decision.NEEDS_REVIEW))
+    v1_digest = run_subject_digest(run, version=1)
+    assert v1_digest.startswith("v1:sha256:")
+    att = _attestation(run, AttestationDecision.ACCEPT, ["r1-pd-1"], subject_digest=v1_digest)
+    (item,) = compute_review_debt(run, [att])
+    assert item.status == "open" and item.stale_attestation is True
 
 
 def test_blank_identity_or_scope_is_refused_by_the_schema():

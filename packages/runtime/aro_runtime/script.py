@@ -31,12 +31,16 @@ class Script(BaseModel):
     @model_validator(mode="after")
     def _owner_seat_is_declared(self) -> Script:
         # Structural accountability: a goal's owning seat must be a seat this
-        # script actually declares. A run cannot own itself to a phantom seat.
-        seat_ids = {seat.id for seat in self.reviewer_seats}
-        if self.goal.owner_seat_id not in seat_ids:
+        # script actually declares, and seat ids must be unique — two people
+        # sharing one seat id makes the accountable party ambiguous.
+        ids = [seat.id for seat in self.reviewer_seats]
+        if len(ids) != len(set(ids)):
+            dupes = sorted({sid for sid in ids if ids.count(sid) > 1})
+            raise ValueError(f"duplicate reviewer seat ids: {dupes}")
+        if self.goal.owner_seat_id not in set(ids):
             raise ValueError(
                 f"goal.owner_seat_id {self.goal.owner_seat_id!r} is not a declared "
-                f"reviewer seat (declared: {sorted(seat_ids)})"
+                f"reviewer seat (declared: {sorted(ids)})"
             )
         return self
 
