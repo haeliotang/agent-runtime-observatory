@@ -66,12 +66,17 @@ gh release upload credential-packet-v1 credential_packet_v1.tar.gz.asc \
 
 ### How a third party verifies it
 
+The signing key is the maintainer's GitHub GPG key, fingerprint
+`BAEF75200B49F1D3D6DBC81D01A3AFAC8B5F4361` (long id `01A3AFAC8B5F4361`).
+GitHub serves the public key directly, so no keyserver is needed:
+
 ```bash
 gh release download credential-packet-v1 \
   -R haeliotang/agent-runtime-observatory -D pkt && cd pkt
-gpg --recv-keys <KEYID>                       # fetch the maintainer's public key
+curl -s https://github.com/haeliotang.gpg | gpg --import   # maintainer's public key
 gpg --verify credential_packet_v1.tar.gz.asc credential_packet_v1.tar.gz
-# "Good signature" => these bytes were signed by <KEYID> and are unmodified
+# "Good signature from HaelioTang ... 01A3AFAC8B5F4361" => these bytes were
+# signed by that key and are unmodified. Confirm the fingerprint above matches.
 ```
 
 This is independent of, and complementary to, the packet's own self-verifying
