@@ -188,24 +188,24 @@ Targets and alerting sketches for these panels live in [docs/slo.md](docs/slo.md
 
 ## Roadmap
 
-Tracked as [open issues](https://github.com/haeliotang/agent-runtime-observatory/issues);
-the next increments are:
+The software line is **frozen at `v0.2.5`** (portfolio freeze). The two active
+items are not engineering — they are the signals internal CI cannot provide:
 
-1. Browsable traces — Tempo in compose, span links between record and replay,
-   Prometheus alerting rules from the SLO sketches
-   ([#8](https://github.com/haeliotang/agent-runtime-observatory/issues/8))
-2. GHCR image publish, making the k8s manifests' image reference real
-   ([#10](https://github.com/haeliotang/agent-runtime-observatory/issues/10))
-3. OTel GenAI semantic-convention mapping
-   ([#12](https://github.com/haeliotang/agent-runtime-observatory/issues/12))
-   and a TRACE_VERSION reject/migration path
-   ([#21](https://github.com/haeliotang/agent-runtime-observatory/issues/21))
-4. Deterministic golden traces — strip wall-clock timestamps so goldens are
-   purely content-addressed
-   ([#15](https://github.com/haeliotang/agent-runtime-observatory/issues/15))
-5. Counterfactual policy replay — evaluate a *new* policy against *old*
-   traces; expanded golden set + nightly regression; JSON Schema export of
-   the object model
+1. **Independent reproduction**
+   ([#37](https://github.com/haeliotang/agent-runtime-observatory/issues/37))
+   — a third party runs the packet + test suite and reports. This is the
+   acceptance criterion for "independently reproduced".
+2. **90-second demo**
+   ([#38](https://github.com/haeliotang/agent-runtime-observatory/issues/38))
+   — a comms asset, explicitly *not* a verification signal.
+
+Post-freeze backlog, deprioritized (touched only if an external report surfaces
+a P0/P1): browsable traces / Tempo ([#8](https://github.com/haeliotang/agent-runtime-observatory/issues/8)),
+GHCR image publish ([#10](https://github.com/haeliotang/agent-runtime-observatory/issues/10)),
+OTel GenAI semconv ([#12](https://github.com/haeliotang/agent-runtime-observatory/issues/12))
+and a `TRACE_VERSION` migration path ([#21](https://github.com/haeliotang/agent-runtime-observatory/issues/21)),
+fully deterministic goldens ([#15](https://github.com/haeliotang/agent-runtime-observatory/issues/15)),
+and the registered accountability boundaries ([#29–#33](https://github.com/haeliotang/agent-runtime-observatory/issues?q=is%3Aissue+is%3Aopen+label%3Aboundary), see [docs/limitations.md](docs/limitations.md)).
 
 Shipped along the way: Postgres queue with `SKIP LOCKED` claims,
 retry/dead-letter/chaos, the compose stack in CI (#9), and per-item
@@ -243,6 +243,8 @@ bundles the recorded official-eval reports with a closed SHA chain — download,
 verify, and re-derive the verdict table with stock `python3` per its `VERIFY.md`.
 This isn't a one-time claim: the `release-evidence` CI job re-downloads the
 published asset, checks the pinned SHA and the 7/7 chain, and re-derives the
-table on every push — one of the nine required checks. To verify *authorship*
-(not just integrity), the packet can carry a detached GPG signature — see
+table on every push — a required check. It also verifies the packet's detached
+GPG signature (`credential_packet_v1.tar.gz.asc`) against the in-repo maintainer
+key `01A3AFAC8B5F4361` (fingerprint `BAEF75200B49F1D3D6DBC81D01A3AFAC8B5F4361`),
+so *authorship* is gated too, not just integrity — verify it yourself per
 [docs/signing.md](docs/signing.md).

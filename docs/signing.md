@@ -83,6 +83,12 @@ This is independent of, and complementary to, the packet's own self-verifying
 sha256 chain (see [evidence-matrix.md](evidence-matrix.md)): the sha256 proves
 *integrity* (nothing changed), the signature proves *authorship* (who issued it).
 
+This is a **standing gate**, not a one-time manual check: the `release-evidence`
+CI job downloads the `.asc` on every push and verifies it against the maintainer
+public key committed at [`docs/maintainer-pubkey.asc`](maintainer-pubkey.asc),
+asserting the fingerprint `BAEF75200B49F1D3D6DBC81D01A3AFAC8B5F4361`. CI turns
+red if the published signature stops matching that pinned key.
+
 ## Signing future version tags (optional)
 
 Historical `v*` tags are lightweight and left untouched. From the next release
@@ -102,6 +108,19 @@ git config --global tag.gpgSign true
 | **Content integrity** | detached signature fails if a single byte changes | protection of assets that were never signed |
 | **Tag immutability** | unchanged — signing content leaves `credential-packet-v1` exactly as protected by the ruleset | retroactive signing of the existing lightweight evidence tag (deliberately not done) |
 
-See also: [Immutable releases](limitations.md) is a separate, browser-only repo
-setting that, when available, makes published release assets undeletable — a
-useful complement to signing, not a substitute for it.
+### A note on "immutable releases"
+
+GitHub's *immutable releases* setting is enabled on this repo, but it protects
+**only releases published after it was turned on** — GitHub does not retroactively
+freeze pre-existing releases. The `credential-packet-v1` release predates the
+setting, so its GitHub `immutable` flag is `false`. Its practical immutability
+comes from three other facts, not that flag:
+
+- the evidence **tag** cannot be deleted or force-updated (ruleset `protect-release-tags`);
+- the packet **SHA** is pinned in CI and the README, so a swapped asset turns CI red;
+- the packet carries a **GPG signature** verified as a standing gate (above).
+
+Making the GitHub `immutable:true` flag literally true would require publishing a
+*new* canonical release, which would fork the single-canonical-source property this
+repo deliberately maintains. That trade was declined; the three facts above are the
+guarantee.
