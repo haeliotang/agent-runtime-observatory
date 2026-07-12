@@ -13,7 +13,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field, computed_field, field_validator
+from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 
 
 def utcnow() -> datetime:
@@ -254,6 +254,32 @@ class AgentRun(BaseModel):
         if Decision.NEEDS_REVIEW in decisions:
             return RunVerdict.REVIEW_REQUIRED
         return RunVerdict.TRUSTED
+
+    @model_validator(mode="after")
+    def _identity_invariants(self) -> AgentRun:
+        # These invariants must hold on the *persisted* run, not only on the
+        # Script it came from — the API reads the stored AgentRun. Without them,
+        # duplicate decision ids let one attestation clear two items (breaking
+        # per-item consumption), duplicate seat ids make the accountable party
+        # ambiguous, and a foreign sub-object could ride along on a run.
+        seat_ids = [s.id for s in self.reviewer_seats]
+        if len(seat_ids) != len(set(seat_ids)):
+            raise ValueError("duplicate reviewer seat ids in run")
+        decision_ids = [d.id for d in self.policy_decisions]
+        if len(decision_ids) != len(set(decision_ids)):
+            raise ValueError("duplicate policy decision ids in run")
+        for collection, name in (
+            (self.policy_decisions, "policy_decisions"),
+            (self.risk_signals, "risk_signals"),
+            (self.evidence, "evidence"),
+            (self.artifacts, "artifacts"),
+        ):
+            for obj in collection:
+                if obj.run_id != self.id:
+                    raise ValueError(
+                        f"{name} entry has run_id {obj.run_id!r} != run id {self.id!r}"
+                    )
+        return self
 
 
 class Attestation(BaseModel):

@@ -1,6 +1,6 @@
 [project]
 name = "aro-evals"
-version = "0.2.3"
+version = "0.2.5"
 description = "Golden-task evals and replay regression for agent runs."
 requires-python = ">=3.11"
 dependencies = ["aro-schema", "aro-runtime"]

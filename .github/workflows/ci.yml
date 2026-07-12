@@ -3,9 +3,38 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
 
 jobs:
+  version-consistency:
+    # Software identity must agree with itself and, on a release tag, with the
+    # tag — catching the "tag says v0.2.4 but the package still reports 0.2.3"
+    # class of drift at release time, not after publish.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: All versions agree (packages, FastAPI app, web) and match the tag
+        run: |
+          set -euo pipefail
+          root=$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)
+          echo "root version: $root"
+          bad=0
+          for f in packages/*/pyproject.toml apps/api/pyproject.toml apps/worker/pyproject.toml; do
+            v=$(grep -m1 '^version = ' "$f" | cut -d'"' -f2)
+            [ "$v" = "$root" ] || { echo "MISMATCH $f: $v != $root"; bad=1; }
+          done
+          app=$(grep -oE 'version="[0-9]+\.[0-9]+\.[0-9]+"' apps/api/aro_api/main.py | head -1 | cut -d'"' -f2)
+          [ "$app" = "$root" ] || { echo "MISMATCH FastAPI app: $app != $root"; bad=1; }
+          web=$(grep -m1 '"version"' apps/web/package.json | cut -d'"' -f4)
+          [ "$web" = "$root" ] || { echo "MISMATCH web: $web != $root"; bad=1; }
+          if [[ "${GITHUB_REF:-}" == refs/tags/v* ]]; then
+            tag="${GITHUB_REF#refs/tags/v}"
+            [ "$tag" = "$root" ] || { echo "MISMATCH tag v$tag != version $root"; bad=1; }
+          fi
+          [ "$bad" = "0" ] && echo "versions consistent ($root)"
+          exit "$bad"
+
   clinic:
     runs-on: ubuntu-latest
     steps:
@@ -144,7 +173,7 @@ jobs:
 
   release-evidence:
     # A source-consistency gate, not just an asset-availability check: on every
-    # push it checks out the CURRENT source, downloads the published v0.2.2
+    # push it checks out the CURRENT source, downloads the published credential-packet-v1
     # packet by fixed URL + pinned SHA, verifies the files<->MANIFEST<->provenance
     # chain, confirms the packet's bundled verdict script is byte-identical to
     # the current source, and reproduces the verdict table. Red CI if the
@@ -155,7 +184,7 @@ jobs:
       PACKET_SHA: af6e4142299b58cbfbeb67b3b357a6e438c272f7e074ee17b9c8e012a4dd01f1
     steps:
       - uses: actions/checkout@v4
-      - name: Download the published packet (v0.2.2) and check the pinned SHA
+      - name: Download the published packet (credential-packet-v1) and check the pinned SHA
         run: |
           set -euo pipefail
           curl -fsSL "$PACKET_URL" -o packet.tar.gz
