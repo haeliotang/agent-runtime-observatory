@@ -243,4 +243,6 @@ bundles the recorded official-eval reports with a closed SHA chain — download,
 verify, and re-derive the verdict table with stock `python3` per its `VERIFY.md`.
 This isn't a one-time claim: the `release-evidence` CI job re-downloads the
 published asset, checks the pinned SHA and the 7/7 chain, and re-derives the
-table on every push — one of the nine required checks.
+table on every push — one of the nine required checks. To verify *authorship*
+(not just integrity), the packet can carry a detached GPG signature — see
+[docs/signing.md](docs/signing.md).
