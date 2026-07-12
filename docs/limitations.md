@@ -33,6 +33,13 @@ undiscovered bug. Where there is a tracking issue, it is linked.
 |---|---|---|
 | **clinic ↔ ARO is a narrative relation, not a code interface** | `packages/clinic` shares this repo's null-reporting discipline and CI, but no ARO package imports it and there is no integration test binding clinic's audit protocol to the runtime object model. "The audit-protocol layer" is a description, not yet an executable interface | [#33](https://github.com/haeliotang/agent-runtime-observatory/issues/33) |
 
+## Release governance
+
+| Boundary | What holds | What does **not** | Tracking |
+|---|---|---|---|
+| **Version consistency is detected, not prevented** | `version-consistency` CI (a required check) fails if any package/app/web version disagrees with root, and on a tag push if the tag name ≠ the version | it runs *after* the tag is pushed; a wrong tag (e.g. `v0.2.6` on `0.2.5` source) turns CI red but the no-delete ruleset then makes that tag permanent. GitHub Cloud has no pre-receive hook to reject the push — the guarantee is process + a loud red gate, not prevention | — |
+| **Canonical release predates immutability** | the evidence tag is delete/rewrite-protected (ruleset); the packet SHA is pinned in CI; the packet's GPG signature is verified as a standing gate | the GitHub `immutable` flag on the `credential-packet-v1` release is `false` — the setting only protects releases published *after* it was enabled. Substantive tamper-resistance is the SHA + signature + tag ruleset, not that flag (see [signing.md](signing.md)) | — |
+
 ## Out of scope by design
 
 Signed/tamper-proof traces (traces are tamper-*evident* via replay, not signed),

@@ -174,14 +174,18 @@ jobs:
   release-evidence:
     # A source-consistency gate, not just an asset-availability check: on every
     # push it checks out the CURRENT source, downloads the published credential-packet-v1
-    # packet by fixed URL + pinned SHA, verifies the files<->MANIFEST<->provenance
-    # chain, confirms the packet's bundled verdict script is byte-identical to
-    # the current source, and reproduces the verdict table. Red CI if the
-    # published evidence drifts from the pinned digest OR from current source.
+    # packet by fixed URL + pinned SHA, verifies its GPG signature against the
+    # in-repo maintainer key (authorship, not just integrity), verifies the
+    # files<->MANIFEST<->provenance chain, confirms the packet's bundled verdict
+    # script is byte-identical to the current source, and reproduces the verdict
+    # table. Red CI if the published evidence drifts from the pinned digest, the
+    # pinned signing key, OR current source.
     runs-on: ubuntu-latest
     env:
       PACKET_URL: https://github.com/haeliotang/agent-runtime-observatory/releases/download/credential-packet-v1/credential_packet_v1.tar.gz
+      PACKET_SIG_URL: https://github.com/haeliotang/agent-runtime-observatory/releases/download/credential-packet-v1/credential_packet_v1.tar.gz.asc
       PACKET_SHA: af6e4142299b58cbfbeb67b3b357a6e438c272f7e074ee17b9c8e012a4dd01f1
+      SIGNING_FPR: BAEF75200B49F1D3D6DBC81D01A3AFAC8B5F4361
     steps:
       - uses: actions/checkout@v4
       - name: Download the published packet (credential-packet-v1) and check the pinned SHA
@@ -189,6 +193,21 @@ jobs:
           set -euo pipefail
           curl -fsSL "$PACKET_URL" -o packet.tar.gz
           echo "$PACKET_SHA  packet.tar.gz" | sha256sum -c -
+      - name: Verify the packet's GPG signature against the in-repo maintainer key
+        run: |
+          set -euo pipefail
+          # Standing authorship gate: the signature must be by the pinned key,
+          # verified against the public key committed in-repo (not a mutable
+          # keyserver/account endpoint). Fingerprint is asserted so swapping the
+          # in-repo key would also have to match this literal.
+          curl -fsSL "$PACKET_SIG_URL" -o packet.tar.gz.asc
+          gpg --show-keys --with-colons docs/maintainer-pubkey.asc \
+            | awk -F: '/^fpr:/{print $10}' | grep -qx "$SIGNING_FPR"
+          export GNUPGHOME="$(mktemp -d)"
+          gpg --batch --import docs/maintainer-pubkey.asc
+          gpg --batch --status-fd 1 --verify packet.tar.gz.asc packet.tar.gz \
+            | grep -q "VALIDSIG $SIGNING_FPR"
+          echo "packet signature verified: VALIDSIG $SIGNING_FPR"
       - name: Verify chain, provenance, source-consistency, and reproduce
         run: |
           set -euo pipefail
