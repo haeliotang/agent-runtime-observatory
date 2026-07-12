@@ -1,6 +1,6 @@
 [project]
 name = "agent-runtime-observatory"
-version = "0.2.3"
+version = "0.2.5"
 description = "A reference implementation for tracing, replaying, evaluating, and governing agent runs across trust boundaries."
 readme = "README.md"
 requires-python = ">=3.11"

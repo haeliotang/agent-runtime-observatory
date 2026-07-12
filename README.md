@@ -161,10 +161,12 @@ Targets and alerting sketches for these panels live in [docs/slo.md](docs/slo.md
 - The agent is a deterministic scripted runner — that is what makes replay
   divergence a hard signal, and it means LLM-step recording is a roadmap
   item, not a shipped feature.
-- Every way the system fails is classified in
+- The known failure modes are classified in
   [docs/error-taxonomy.md](docs/error-taxonomy.md), with measurable targets in
   [docs/slo.md](docs/slo.md) — including two governance SLOs (replay
-  integrity, review-debt consumption) most stacks don't track.
+  integrity, review-debt consumption) most stacks don't track — and the known
+  *limitations* (what is not enforced) are listed in
+  [docs/limitations.md](docs/limitations.md).
 - Security defaults are demo-grade and the substrate is **not
   internet-facing** — the boundary is stated plainly in
   [SECURITY.md](SECURITY.md).

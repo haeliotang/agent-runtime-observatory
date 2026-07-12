@@ -88,8 +88,9 @@ filling a ReviewerSeat. Carries wutai's *scoped ratification* invariant
 (`declared_scope` says what IS ratified, `excluded_scope` what explicitly is
 NOT) and stillmirror's *draft-is-not-attestation* invariant (`proposed_by`
 may be an assistant; only the named human in `attested_by` makes it real).
-`subject_digest` pins exactly which stored run record was attested. Recorded
-via `POST /api/runs/{id}/attestations`; counted by `aro_attestations_total`.
+`subject_digest` binds the attestation to the run's `v2` canonical subject (the
+reviewed fields — see rule 4 below — not every serialized byte). Recorded via
+`POST /api/runs/{id}/attestations`; counted by `aro_attestations_total`.
 
 `clears_decisions` binds the attestation to the specific `needs_review`
 PolicyDecision ids it consumes. The API rejects ids that are not real

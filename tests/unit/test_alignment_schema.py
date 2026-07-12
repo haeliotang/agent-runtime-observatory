@@ -16,9 +16,9 @@ from aro_schema import (
 )
 
 
-def _decision(step: int, decision: Decision) -> PolicyDecision:
+def _decision(step: int, decision: Decision, id_: str | None = None) -> PolicyDecision:
     return PolicyDecision(
-        id=f"pd-{step}",
+        id=id_ or f"pd-{step}",
         run_id="r1",
         step_index=step,
         policy_id="p1",
@@ -26,6 +26,56 @@ def _decision(step: int, decision: Decision) -> PolicyDecision:
         decision=decision,
         reason="test",
     )
+
+
+def test_agentrun_rejects_duplicate_decision_ids():
+    # round-7 finding 1: the persisted run enforces per-item identity, so one
+    # attestation can never clear two items via a shared decision id.
+    with pytest.raises(ValueError, match="duplicate policy decision ids"):
+        AgentRun(
+            id="r1",
+            task_id="t1",
+            agent="a",
+            policy_decisions=[
+                _decision(1, Decision.NEEDS_REVIEW, id_="dup"),
+                _decision(2, Decision.NEEDS_REVIEW, id_="dup"),
+            ],
+        )
+
+
+def test_agentrun_rejects_duplicate_seat_ids():
+    from aro_schema import ReviewerSeat
+
+    with pytest.raises(ValueError, match="duplicate reviewer seat ids"):
+        AgentRun(
+            id="r1",
+            task_id="t1",
+            agent="a",
+            reviewer_seats=[
+                ReviewerSeat(id="x", name="Alice", role="r", scope="s"),
+                ReviewerSeat(id="x", name="Bob", role="r", scope="s"),
+            ],
+        )
+
+
+def test_agentrun_rejects_foreign_subobject_run_id():
+    with pytest.raises(ValueError, match="run_id"):
+        AgentRun(
+            id="r1",
+            task_id="t1",
+            agent="a",
+            policy_decisions=[
+                PolicyDecision(
+                    id="pd",
+                    run_id="SOMEONE-ELSE",
+                    step_index=1,
+                    policy_id="p",
+                    rule_id="rule",
+                    decision=Decision.NEEDS_REVIEW,
+                    reason="x",
+                )
+            ],
+        )
 
 
 def test_verdict_trusted_when_no_gated_decisions():

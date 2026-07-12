@@ -29,8 +29,8 @@ undiscovered bug. Where there is a tracking issue, it is linked.
 
 ## Integration
 
-| Boundary | Note |
-|---|---|
+| Boundary | Note | Tracking |
+|---|---|---|
 | **clinic ↔ ARO is a narrative relation, not a code interface** | `packages/clinic` shares this repo's null-reporting discipline and CI, but no ARO package imports it and there is no integration test binding clinic's audit protocol to the runtime object model. "The audit-protocol layer" is a description, not yet an executable interface | [#33](https://github.com/haeliotang/agent-runtime-observatory/issues/33) |
 
 ## Out of scope by design

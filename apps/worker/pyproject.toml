@@ -1,6 +1,6 @@
 [project]
 name = "aro-worker"
-version = "0.2.3"
+version = "0.2.5"
 description = "Queue worker that executes queued agent runs and records traces."
 requires-python = ">=3.11"
 dependencies = ["aro-schema", "aro-runtime", "aro-telemetry"]

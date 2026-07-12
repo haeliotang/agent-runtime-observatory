@@ -92,7 +92,7 @@ def create_app(
         rate_limit_per_minute = int(os.environ.get("ARO_RATE_LIMIT_PER_MINUTE", "120"))
 
     setup_tracing("aro-api")
-    app = FastAPI(title="agent-runtime-observatory", version="0.2.3")
+    app = FastAPI(title="agent-runtime-observatory", version="0.2.5")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:5173"],
